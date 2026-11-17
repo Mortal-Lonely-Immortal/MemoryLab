@@ -2263,21 +2263,31 @@ html[data-theme="white"] #p5-intro { display: none !important; }
    next page appears behind it. No blank interstitial screen.
    ================================================================ */
 .wipe-old {
-  position: fixed; z-index: 500; overflow: hidden; pointer-events: none;
+  position: fixed; left: 0; z-index: 500; overflow: hidden; pointer-events: none;
   background: var(--bg, #000);
-  clip-path: polygon(calc(var(--wipe-x, -20vw) - 5vw) 0, 100% 0, 100% 100%, var(--wipe-x, -20vw) 100%);
-  will-change: clip-path;
+  clip-path: polygon(-12vw 0, 100% 0, 100% 100%, 0 100%);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
   contain: paint;
 }
+.wipe-old.is-run {
+  transform: translate3d(112vw, 0, 0);
+  transition: transform .56s cubic-bezier(.65, 0, .2, 1);
+}
+.wipe-old-inner { position: absolute; left: 0; top: 0; width: 100%; }
 .wipe-slash {
-  position: fixed; inset: 0; z-index: 501; pointer-events: none;
-  background: #e60012;
-  clip-path: polygon(calc(var(--wipe-x, -20vw) - 8vw) 0, calc(var(--wipe-x, -20vw) - 6vw) 0, var(--wipe-x, -20vw) 100%, calc(var(--wipe-x, -20vw) - 2vw) 100%);
-  will-change: clip-path;
+  position: fixed; top: 0; bottom: 0; left: -22vw; width: 18vw; z-index: 501;
+  pointer-events: none; background: #e60012;
+  transform: translate3d(0, 0, 0); will-change: transform;
+  clip-path: polygon(58% 0, 100% 0, 42% 100%, 0 100%);
+}
+.wipe-slash.is-run {
+  transform: translate3d(126vw, 0, 0);
+  transition: transform .56s cubic-bezier(.65, 0, .2, 1);
 }
 .wipe-slash::after {
   content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.9);
-  clip-path: polygon(calc(var(--wipe-x, -20vw) - 8.6vw) 0, calc(var(--wipe-x, -20vw) - 8vw) 0, calc(var(--wipe-x, -20vw) - 2vw) 100%, calc(var(--wipe-x, -20vw) - 2.6vw) 100%);
+  clip-path: polygon(54% 0, 58% 0, 0 100%, 0 100%);
 }
 html[data-theme="white"] .wipe-old { background: #eef5f9; }
 html[data-theme="white"] .wipe-slash { background: #1b57ff; }
@@ -2287,7 +2297,6 @@ html[data-theme="black"] .wipe-slash::after { background: #f7f4ee; }
 @media (prefers-reduced-motion: reduce) {
   .wipe-old, .wipe-slash { display: none !important; }
 }
-
 
 /* ================================================================
    P5R Calling Card component — base.png spiral, canvas.png frame,
@@ -2385,11 +2394,6 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 }
 
 
-#main-content.wipe-under {
-  clip-path: polygon(0 0, var(--wipe-x, -20vw) 0, calc(var(--wipe-x, -20vw) - 5vw) 100%, 0 100%);
-  will-change: clip-path;
-  contain: paint;
-}
 
 </style>
 </head>
@@ -2545,22 +2549,28 @@ function captureOldPage() {
   var padL = parseFloat(cs.paddingLeft) || 0;
   var padR = parseFloat(cs.paddingRight) || 0;
   var padT = parseFloat(cs.paddingTop) || 0;
-  var padB = parseFloat(cs.paddingBottom) || 0;
+
   var layer = document.createElement('div');
   layer.className = 'wipe-old';
-  layer.style.left = (rect.left + padL) + 'px';
-  layer.style.top = (rect.top + padT) + 'px';
-  layer.style.width = Math.max(0, rect.width - padL - padR) + 'px';
-  layer.style.height = Math.max(0, rect.height - padT - padB) + 'px';
-  layer.innerHTML = main.innerHTML;
-  layer.querySelectorAll('[id]').forEach(function(el) {
+  var layerTop = rect.top + padT;
+  layer.style.top = layerTop + 'px';
+  layer.style.width = '100vw';
+  layer.style.height = Math.max(0, window.innerHeight - layerTop) + 'px';
+
+  var inner = document.createElement('div');
+  inner.className = 'wipe-old-inner';
+  inner.style.left = (rect.left + padL) + 'px';
+  inner.style.width = Math.max(0, rect.width - padL - padR) + 'px';
+  inner.innerHTML = main.innerHTML;
+  inner.querySelectorAll('[id]').forEach(function(el) {
     if (!el.closest('svg')) el.removeAttribute('id');
   });
+  layer.appendChild(inner);
   document.body.appendChild(layer);
 
   // canvas bitmaps are not part of cloneNode, so copy them explicitly
   var srcCanvases = main.querySelectorAll('canvas');
-  var dstCanvases = layer.querySelectorAll('canvas');
+  var dstCanvases = inner.querySelectorAll('canvas');
   for (var i = 0; i < srcCanvases.length && i < dstCanvases.length; i++) {
     try {
       dstCanvases[i].width = srcCanvases[i].width;
@@ -2583,48 +2593,33 @@ function beginPageWipe() {
   if (!_pageHasLoaded || prefersReducedMotion()) return null;
   var oldLayer = captureOldPage();
   if (!oldLayer) return null;
-  var main = document.getElementById('main-content');
-  if (main) main.classList.add('wipe-under');
-  document.documentElement.style.setProperty('--wipe-x', '-20vw');
   var slash = makeWipeSlash();
   return { old: oldLayer, slash: slash };
 }
 
 function cleanupPageWipe(ctx) {
-  if (_wipeFrame) { cancelAnimationFrame(_wipeFrame); _wipeFrame = 0; }
   if (!ctx) return;
   if (ctx.old && ctx.old.parentNode) ctx.old.parentNode.removeChild(ctx.old);
   if (ctx.slash && ctx.slash.parentNode) ctx.slash.parentNode.removeChild(ctx.slash);
-  var main = document.getElementById('main-content');
-  if (main) main.classList.remove('wipe-under');
-  document.documentElement.style.removeProperty('--wipe-x');
   try { window.dispatchEvent(new Event('memorylab:wipeend')); } catch (e) {}
 }
 
 function endPageWipe(ctx) {
   if (!ctx) return Promise.resolve();
   return new Promise(function(resolve) {
+    // Let the freshly rendered page settle for one beat, then move the old
+    // page on the compositor. No per-frame clip-path repaint.
     setTimeout(function() {
-      var start = performance.now();
-      var duration = 680;
-      function frame(now) {
-      var p = Math.min(1, (now - start) / duration);
-      // easeInOutCubic: the cut starts slowly, opens in the middle, settles at the end
-      var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-      var x = -20 + 140 * e;
-      document.documentElement.style.setProperty('--wipe-x', x.toFixed(2) + 'vw');
-      if (p < 1) {
-        _wipeFrame = requestAnimationFrame(frame);
-        } else {
-          _wipeFrame = 0;
-          cleanupPageWipe(ctx);
-          resolve();
-        }
-      }
-      _wipeFrame = requestAnimationFrame(frame);
-    }, 100);
+      if (ctx.old) ctx.old.classList.add('is-run');
+      if (ctx.slash) ctx.slash.classList.add('is-run');
+      setTimeout(function() {
+        cleanupPageWipe(ctx);
+        resolve();
+      }, 620);
+    }, 90);
   });
 }
+
 
 function loadPage(page) {
   var seq = ++_pageSeq;
@@ -3472,23 +3467,27 @@ function disposeChart(chart) {
 
 function redrawStatsCharts() {
   if (!_lastStatsData || !$('#stats-chart')) return;
-  var draw = function() {
-    if (!_lastStatsData || !$('#stats-chart')) return;
-    drawStatsChart(_lastStatsData.daily);
-    drawHeatmap(_lastStatsData.heat);
-    drawForecast(_lastStatsData.forecast);
-    drawStateChart(_lastStatsData.states);
-  };
-  // Do not initialize four ECharts instances in the middle of the wipe.
-  // Let the page transition finish first; the old snapshot already covers
-  // these empty boxes while the cut is moving.
-  if (document.querySelector('#main-content.wipe-under')) {
+  var charts = [
+    function() { drawStatsChart(_lastStatsData.daily); },
+    function() { drawHeatmap(_lastStatsData.heat); },
+    function() { drawForecast(_lastStatsData.forecast); },
+    function() { drawStateChart(_lastStatsData.states); }
+  ];
+  var idx = 0;
+  function next() {
+    if (idx >= charts.length || !_lastStatsData || !$('#stats-chart')) return;
+    charts[idx++]();
+    if (idx < charts.length) requestAnimationFrame(function() { setTimeout(next, 0); });
+  }
+  // Do not initialize four ECharts instances in one long task, and do not do
+  // it while the wipe is moving. Spread them over consecutive frames.
+  if (document.querySelector('.wipe-old')) {
     window.addEventListener('memorylab:wipeend', function() {
-      setTimeout(draw, 30);
+      setTimeout(function() { requestAnimationFrame(next); }, 30);
     }, { once: true });
     return;
   }
-  draw();
+  next();
 }
 
 function drawStatsChart(daily) {
