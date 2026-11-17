@@ -207,6 +207,7 @@ namespace MemoryLabPortable
             catch (Exception ex)
             {
                 Log("start failed: " + ex);
+                StopAll();
                 SetStatus("启动失败", ex.Message);
                 progress.Style = ProgressBarStyle.Continuous;
                 progress.Value = 0;
@@ -233,22 +234,25 @@ namespace MemoryLabPortable
         private void StartAll()
         {
             Log("StartAll begin");
-            if (!Up(BackendHealth))
+            SetStatus("并行启动本地服务…", "后端 / 文档 / 网页同时启动");
+
+            bool needBackend = !Up(BackendHealth);
+            bool needDocs = !Up(DocsHealth);
+            bool needNginx = !Up(Url);
+
+            if (needBackend)
             {
-                SetStatus("启动本地数据库与后端…", "H2 文件数据库，首次会建表");
                 backend = StartProcess(Path.Combine(baseDir, "runtime", "bin", "java.exe"),
-                    "-Xms128m -Xmx512m -Djava.io.tmpdir=\"" + Path.Combine(baseDir, "data", "tmp") +
+                    "-Xms128m -Xmx512m -XX:TieredStopAtLevel=1 -XX:+UseSerialGC -Djava.io.tmpdir=\"" + Path.Combine(baseDir, "data", "tmp") +
                     "\" -jar \"" + Path.Combine(baseDir, "backend", "memory-app.jar") +
                     "\" --spring.profiles.active=portable --server.port=18081",
                     baseDir,
                     new string[,] { { "MEMORYLAB_DATA", Path.Combine(baseDir, "data", "db") } });
                 ownBackend = true;
-                if (!WaitFor(BackendHealth, 120000)) throw new Exception("后端没有在 120 秒内启动，请查看 data\\db 读写权限。");
             }
 
-            if (!Up(DocsHealth))
+            if (needDocs)
             {
-                SetStatus("启动文档解析服务…", "PDF / Word / PPT 本地解析");
                 docs = StartProcess(Path.Combine(baseDir, "docs", "MemoryLabDocs.exe"),
                     "",
                     Path.Combine(baseDir, "docs"),
@@ -260,20 +264,21 @@ namespace MemoryLabPortable
                         { "DOCS_PORT", "15000" }
                     });
                 ownDocs = true;
-                if (!WaitFor(DocsHealth, 90000)) throw new Exception("文档服务没有在 90 秒内启动。");
             }
 
-            if (!Up(Url))
+            if (needNginx)
             {
-                SetStatus("启动本地网页服务…", "Nginx · 127.0.0.1:18080");
                 string nginxDir = Path.Combine(baseDir, "nginx");
                 nginx = StartProcess(Path.Combine(nginxDir, "nginx.exe"),
                     "-p . -c conf/nginx.conf",
                     nginxDir,
                     null);
                 ownNginx = true;
-                if (!WaitFor(Url, 30000)) throw new Exception("网页服务没有在 30 秒内启动。");
             }
+
+            if (needBackend && !WaitFor(BackendHealth, 120000)) throw new Exception("后端没有在 120 秒内启动，请查看 data\\db 读写权限。");
+            if (needDocs && !WaitFor(DocsHealth, 90000)) throw new Exception("文档服务没有在 90 秒内启动。");
+            if (needNginx && !WaitFor(Url, 30000)) throw new Exception("网页服务没有在 30 秒内启动。");
         }
 
         private Process StartProcess(string file, string args, string workDir, string[,] env)

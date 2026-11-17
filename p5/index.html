@@ -1000,7 +1000,6 @@ html[data-theme="white"] body {
     radial-gradient(1100px 620px at 8% -12%, rgba(53,209,232,0.24), transparent 62%),
     radial-gradient(900px 520px at 105% 0%, rgba(27,87,255,0.10), transparent 58%),
     linear-gradient(180deg, #f8fcff 0%, #eaf5fb 58%, #e1f0f8 100%);
-  background-attachment: fixed;
 }
 html[data-theme="white"] .bg-pattern {
   background:
@@ -1415,7 +1414,6 @@ html[data-theme="white"] body {
     linear-gradient(112deg, rgba(20,59,223,0.10) 0 20%, transparent 20.2%),
     radial-gradient(900px 520px at 102% 100%, rgba(53,209,232,0.13), transparent 62%),
     linear-gradient(180deg, #ffffff 0%, #f2f9ff 58%, #e7f4fb 100%);
-  background-attachment: fixed;
 }
 html[data-theme="white"] .bg-pattern::before {
   content: ''; position: absolute; left: -16vw; top: -12vh; width: 34vw; height: 124vh;
@@ -2269,6 +2267,7 @@ html[data-theme="white"] #p5-intro { display: none !important; }
   background: var(--bg, #000);
   clip-path: polygon(calc(var(--wipe-x, -20vw) - 5vw) 0, 100% 0, 100% 100%, var(--wipe-x, -20vw) 100%);
   will-change: clip-path;
+  contain: paint;
 }
 .wipe-slash {
   position: fixed; inset: 0; z-index: 501; pointer-events: none;
@@ -2389,6 +2388,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 #main-content.wipe-under {
   clip-path: polygon(0 0, var(--wipe-x, -20vw) 0, calc(var(--wipe-x, -20vw) - 5vw) 100%, 0 100%);
   will-change: clip-path;
+  contain: paint;
 }
 
 </style>
@@ -2598,6 +2598,7 @@ function cleanupPageWipe(ctx) {
   var main = document.getElementById('main-content');
   if (main) main.classList.remove('wipe-under');
   document.documentElement.style.removeProperty('--wipe-x');
+  try { window.dispatchEvent(new Event('memorylab:wipeend')); } catch (e) {}
 }
 
 function endPageWipe(ctx) {
@@ -2621,7 +2622,7 @@ function endPageWipe(ctx) {
         }
       }
       _wipeFrame = requestAnimationFrame(frame);
-    }, 140);
+    }, 100);
   });
 }
 
@@ -3471,10 +3472,23 @@ function disposeChart(chart) {
 
 function redrawStatsCharts() {
   if (!_lastStatsData || !$('#stats-chart')) return;
-  drawStatsChart(_lastStatsData.daily);
-  drawHeatmap(_lastStatsData.heat);
-  drawForecast(_lastStatsData.forecast);
-  drawStateChart(_lastStatsData.states);
+  var draw = function() {
+    if (!_lastStatsData || !$('#stats-chart')) return;
+    drawStatsChart(_lastStatsData.daily);
+    drawHeatmap(_lastStatsData.heat);
+    drawForecast(_lastStatsData.forecast);
+    drawStateChart(_lastStatsData.states);
+  };
+  // Do not initialize four ECharts instances in the middle of the wipe.
+  // Let the page transition finish first; the old snapshot already covers
+  // these empty boxes while the cut is moving.
+  if (document.querySelector('#main-content.wipe-under')) {
+    window.addEventListener('memorylab:wipeend', function() {
+      setTimeout(draw, 30);
+    }, { once: true });
+    return;
+  }
+  draw();
 }
 
 function drawStatsChart(daily) {
@@ -3489,6 +3503,7 @@ function drawStatsChart(daily) {
   var reviews = daily.map(function(d) { return d.reviewCount; });
   var retention = daily.map(function(d) { return d.reviewCount > 0 ? Math.round(d.retention * 100) : null; });
   statsChart.setOption({
+    animation: false,
     backgroundColor: 'transparent',
     textStyle: { color: t.text, fontFamily: 'Microsoft YaHei' },
     grid: { left: 42, right: 46, top: 38, bottom: 40 },
@@ -3522,6 +3537,7 @@ function drawHeatmap(heat) {
   var max = Math.max(2, Math.max.apply(null, counts.length ? counts : [0]));
   try {
     heatChart.setOption({
+    animation: false,
       backgroundColor: 'transparent',
       textStyle: { color: t.text, fontFamily: 'Microsoft YaHei' },
       tooltip: { formatter: function(p) { return p.value[0] + '<br/>复习 ' + p.value[1] + ' 张'; } },
@@ -3551,6 +3567,7 @@ function drawForecast(forecast) {
   forecastChart = disposeChart(forecastChart);
   forecastChart = window.echarts.init(el, null, { renderer: 'canvas' });
   forecastChart.setOption({
+    animation: false,
     backgroundColor: 'transparent',
     textStyle: { color: t.text, fontFamily: 'Microsoft YaHei' },
     grid: { left: 38, right: 16, top: 24, bottom: 40 },
@@ -3570,6 +3587,7 @@ function drawStateChart(states) {
   stateChart = window.echarts.init(el, null, { renderer: 'canvas' });
   var colors = t.white ? ['#1b57ff', '#35d1e8', '#2c9a7a', '#f0417f'] : ['#e60012', '#f7f4ee', '#d6ff4a', '#ff3347'];
   stateChart.setOption({
+    animation: false,
     backgroundColor: 'transparent',
     textStyle: { color: t.text, fontFamily: 'Microsoft YaHei' },
     tooltip: { trigger: 'item' },
@@ -3686,6 +3704,7 @@ function drawMethodRadar() {
   methodChart = window.echarts.init(el, null, { renderer: 'canvas' });
   var names = items.map(function(i) { return i.name.length > 10 ? i.name.slice(0, 10) + '…' : i.name; });
   methodChart.setOption({
+    animation: false,
     backgroundColor: 'transparent',
     textStyle: { color: t.text, fontFamily: 'Microsoft YaHei' },
     tooltip: {},
