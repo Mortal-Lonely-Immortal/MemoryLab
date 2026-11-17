@@ -2276,13 +2276,13 @@ html[data-theme="white"] #p5-intro { display: none !important; }
 }
 .wipe-old-inner { position: absolute; left: 0; top: 0; width: 100%; }
 .wipe-slash {
-  position: fixed; top: 0; bottom: 0; left: -22vw; width: 18vw; z-index: 501;
+  position: fixed; top: 0; bottom: 0; left: 0; width: 12vw; z-index: 501;
   pointer-events: none; background: #e60012;
   transform: translate3d(0, 0, 0); will-change: transform;
   clip-path: polygon(58% 0, 100% 0, 42% 100%, 0 100%);
 }
 .wipe-slash.is-run {
-  transform: translate3d(126vw, 0, 0);
+  transform: translate3d(112vw, 0, 0);
   transition: transform .56s cubic-bezier(.65, 0, .2, 1);
 }
 .wipe-slash::after {
@@ -2395,6 +2395,10 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 
 
 
+.page-loading-card { min-height: 180px; }
+.page-loading-line { height: 3px; width: 44%; margin: 26px 0 0; background: linear-gradient(90deg, var(--cyan, #35d1e8), var(--red, #e60012)); animation: page-loading 1s ease-in-out infinite alternate; }
+@keyframes page-loading { from { transform: scaleX(.35); transform-origin: left; opacity: .45; } to { transform: scaleX(1); transform-origin: left; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .page-loading-line { animation: none; } }
 </style>
 </head>
 <body>
@@ -2591,9 +2595,13 @@ function makeWipeSlash() {
 
 function beginPageWipe() {
   if (!_pageHasLoaded || prefersReducedMotion()) return null;
-  var oldLayer = captureOldPage();
-  if (!oldLayer) return null;
+  // Put the cut on screen first; the old-page snapshot can follow a frame later.
   var slash = makeWipeSlash();
+  var oldLayer = captureOldPage();
+  if (!oldLayer) {
+    if (slash.parentNode) slash.parentNode.removeChild(slash);
+    return null;
+  }
   return { old: oldLayer, slash: slash };
 }
 
@@ -2607,16 +2615,15 @@ function cleanupPageWipe(ctx) {
 function endPageWipe(ctx) {
   if (!ctx) return Promise.resolve();
   return new Promise(function(resolve) {
-    // Let the freshly rendered page settle for one beat, then move the old
-    // page on the compositor. No per-frame clip-path repaint.
+    // Force layout once, then let the compositor move the old page and the
+    // cut. This starts on the same click/frame as the skeleton page.
+    if (ctx.old) void ctx.old.offsetWidth;
+    if (ctx.old) ctx.old.classList.add('is-run');
+    if (ctx.slash) ctx.slash.classList.add('is-run');
     setTimeout(function() {
-      if (ctx.old) ctx.old.classList.add('is-run');
-      if (ctx.slash) ctx.slash.classList.add('is-run');
-      setTimeout(function() {
-        cleanupPageWipe(ctx);
-        resolve();
-      }, 620);
-    }, 90);
+      cleanupPageWipe(ctx);
+      resolve();
+    }, 600);
   });
 }
 
@@ -2628,9 +2635,15 @@ function loadPage(page) {
     var wipe = beginPageWipe();
     if (seq !== _pageSeq) { cleanupPageWipe(wipe); return; }
     document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.page === page); });
-    if (state.tutorialTimer && state.tutorialTimer.running) await stopTutorialTimer();
     var main = $('#main-content');
+    // The old page snapshot covers this skeleton; the old page starts sliding
+    // immediately while the real page is still loading behind it.
+    if (wipe && main) {
+      main.innerHTML = '<div class="p5-card page-loading-card"><div class="p5-card-header">LOADING 加载中</div><div class="page-loading-line"></div></div>';
+    }
+    var wipeDone = endPageWipe(wipe);
     try {
+      if (state.tutorialTimer && state.tutorialTimer.running) await stopTutorialTimer();
       switch (page) {
         case 'review': await renderReview(main); break;
         case 'tutor': await renderTutor(main); break;
@@ -2642,7 +2655,7 @@ function loadPage(page) {
       }
       _pageHasLoaded = true;
     } finally {
-      await endPageWipe(wipe);
+      await wipeDone;
     }
   }).catch(async function(e) {
     if (seq === _pageSeq) showToast('页面加载失败：' + e.message, 'error');
