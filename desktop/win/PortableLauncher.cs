@@ -368,6 +368,23 @@ namespace MemoryLabPortable
 
         private void StopAll()
         {
+            // Let Spring close H2 cleanly. Killing the JVM directly can leave the
+            // H2 file in a read-only state on the next launch.
+            if (ownBackend)
+            {
+                try
+                {
+                    HttpWebRequest req = (HttpWebRequest)WebRequest.Create("http://127.0.0.1:18081/api/v1/system/shutdown");
+                    req.Method = "POST";
+                    req.Timeout = 3000;
+                    req.ReadWriteTimeout = 3000;
+                    req.ContentLength = 0;
+                    using (HttpWebResponse res = (HttpWebResponse)req.GetResponse()) { }
+                    if (backend != null) backend.WaitForExit(7000);
+                }
+                catch { }
+            }
+
             try
             {
                 if (ownNginx)
@@ -391,7 +408,7 @@ namespace MemoryLabPortable
             }
             catch { }
             if (ownDocs) Kill(docs);
-            if (ownBackend) Kill(backend);
+            if (ownBackend && backend != null && !backend.HasExited) Kill(backend);
             ownNginx = ownDocs = ownBackend = false;
         }
 
