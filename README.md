@@ -13,7 +13,7 @@
 到 GitHub 的 **Releases** 页面下载：
 
 ```text
-MemoryLab-Portable-1.0.3-win64.zip
+MemoryLab-Portable-1.0.4-win64.zip
 ```
 
 1. 解压到有写权限的目录（不要放 `Program Files`）；
@@ -138,6 +138,15 @@ MYSQL_ROOT_PASSWORD=memory_root_pwd
 ```
 
 没有配置 Key 时，文档仍可提取、阅读、生成卡；只是不会翻译简化或 AI 答疑。
+
+如果你使用 **opencode-go**，配置为：
+
+```text
+Base URL: https://opencode.ai/inference/go/openai/v1
+Model:    deepseek-v4.1-flash
+```
+
+opencode-go 的 Key 以 `oc_sk_` 开头，不是 DeepSeek 官方 Key；不要填 `api.deepseek.com`。
 
 ## 教材 → 记忆卡
 

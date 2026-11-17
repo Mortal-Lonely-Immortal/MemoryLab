@@ -13,6 +13,7 @@
 """
 import requests
 import json
+import secrets
 from deeptutor.config import Config
 from deeptutor.services.table_formatter import format_tables_in_response
 from typing import Optional
@@ -35,6 +36,9 @@ class LLMService:
         self.api_key = api_key or Config.LLM_API_KEY
         self.api_base = (api_base or Config.LLM_API_BASE).rstrip('/')
         self.model = model or Config.LLM_MODEL
+        # OpenCode Go requires a stable session header on every request.
+        # Other OpenAI-compatible providers ignore this header.
+        self.session_id = "ses_" + secrets.token_hex(16)
 
         # 尝试从数据库加载持久化的API配置（覆盖Config默认值）
         # 仅当未通过参数显式传入时生效
@@ -115,7 +119,8 @@ class LLMService:
         """构建API请求头，包含认证信息和内容类型"""
         return {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "x-opencode-session": self.session_id
         }
 
     # ========== Agent 工具函数 ==========
