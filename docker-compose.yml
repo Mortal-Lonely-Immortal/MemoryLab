@@ -1,0 +1,88 @@
+name: memory-app
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: memory-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-memory_root_pwd}
+      MYSQL_DATABASE: memory_app
+      TZ: Asia/Shanghai
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks:
+      - memory-net
+
+  backend:
+    build:
+      context: ./backend
+    container_name: memory-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/memory_app?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-memory_root_pwd}
+      TZ: Asia/Shanghai
+    ports:
+      - "127.0.0.1:8081:8080"
+    networks:
+      - memory-net
+
+  frontend:
+    build:
+      context: ./p5
+    container_name: memory-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      docs:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks:
+      - memory-net
+
+  docs:
+    build:
+      context: ./docs-service
+    container_name: memory-docs
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_BASE: ${LLM_API_BASE:-https://api.openai.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-gpt-3.5-turbo}
+      MEMORY_API_URL: http://backend:8080/api/v1
+      DOCS_DATA_DIR: /data
+      DOCS_UPLOAD_FOLDER: /data/uploads
+      TZ: Asia/Shanghai
+    volumes:
+      - docs-data:/data
+    networks:
+      - memory-net
+
+volumes:
+  mysql-data:
+  docs-data:
+
+networks:
+  memory-net:
+    driver: bridge

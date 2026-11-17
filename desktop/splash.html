@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>记忆实验室</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background: #1c1c1c;
+      color: #fff;
+      font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+      user-select: none;
+    }
+    .mark {
+      width: 64px; height: 64px;
+      display: grid; place-items: center;
+      background: #fff; color: #1c1c1c;
+      border-radius: 12px;
+      font-size: 30px; font-weight: 700;
+    }
+    h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    .status {
+      min-height: 20px;
+      margin: 0;
+      color: #b8b8b8;
+      font-size: 13px;
+      text-align: center;
+      padding: 0 36px;
+      line-height: 1.6;
+    }
+    .bar {
+      width: 180px; height: 2px;
+      background: #3a3a3a;
+      overflow: hidden;
+    }
+    .bar::after {
+      content: "";
+      display: block;
+      width: 60px; height: 2px;
+      background: #fff;
+      animation: slide 1.2s infinite ease-in-out;
+    }
+    @keyframes slide {
+      0% { transform: translateX(-60px); }
+      100% { transform: translateX(180px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="mark">记</div>
+  <h1>记忆实验室</h1>
+  <p class="status" id="status">正在准备本地服务…</p>
+  <div class="bar"></div>
+  <script>
+    window.launcher?.onStatus((message) => {
+      document.getElementById('status').textContent = message
+    })
+  </script>
+</body>
+</html>

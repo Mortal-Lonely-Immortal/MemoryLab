@@ -1,0 +1,61 @@
+{
+  "name": "memory-lab-desktop",
+  "version": "1.0.0",
+  "description": "记忆实验室桌面启动器",
+  "main": "main.js",
+  "author": "Memory Lab",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable nsis"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.memorylab.desktop",
+    "productName": "记忆实验室",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "splash.html",
+      "error.html",
+      "package.json",
+      "build/icon.ico"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "MemoryLab-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "记忆实验室",
+      "artifactName": "MemoryLab-${version}-setup.exe"
+    }
+  }
+}

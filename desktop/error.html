@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>启动失败</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      display: flex; flex-direction: column;
+      padding: 26px 28px;
+      gap: 12px;
+      background: #f2f2f0;
+      color: #1a1a1a;
+      font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    }
+    h1 { margin: 0; font-size: 22px; }
+    p { margin: 0; font-size: 13px; line-height: 1.6; color: #555; }
+    pre {
+      flex: 1;
+      margin: 4px 0 0;
+      padding: 10px;
+      overflow: auto;
+      background: #fff;
+      border-radius: 8px;
+      font: 11px/1.5 Consolas, "Courier New", monospace;
+      color: #333;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .actions { display: flex; gap: 8px; }
+    button {
+      height: 34px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #1f3864;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button.secondary { background: #e5e5e2; color: #1a1a1a; }
+  </style>
+</head>
+<body>
+  <h1>应用没有启动</h1>
+  <p id="message">正在读取错误信息…</p>
+  <pre id="log"></pre>
+  <div class="actions">
+    <button id="retry">重试</button>
+    <button id="docker" class="secondary">打开 Docker Desktop</button>
+    <button id="quit" class="secondary">退出</button>
+  </div>
+  <script>
+    window.launcher?.onError((error) => {
+      document.getElementById('message').textContent = error.message
+      document.getElementById('log').textContent = error.log || ''
+    })
+    document.getElementById('retry').onclick = () => window.launcher?.retry()
+    document.getElementById('docker').onclick = () => window.launcher?.openDocker()
+    document.getElementById('quit').onclick = () => window.launcher?.quit()
+  </script>
+</body>
+</html>
