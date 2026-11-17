@@ -10,7 +10,7 @@
 
 ## 快速开始（便携版，推荐）
 
-到 [Releases](https://github.com/你的用户名/memory-app/releases) 下载：
+到 GitHub 的 **Releases** 页面下载：
 
 ```text
 MemoryLab-Portable-1.0.0-win64.zip
