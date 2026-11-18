@@ -2419,6 +2419,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 </style>
 <link rel="stylesheet" href="teach.css">
 <link rel="stylesheet" href="archive3d.css?v=5">
+<link rel="modulepreload" href="./archive3d.bundle.js?v=12">
 </head>
 <body>
 
@@ -3347,6 +3348,9 @@ async function renderCards(main) {
   try {
     var decks = await memApi('GET', '/decks');
     cardsState.decks = decks || [];
+    if (!window.__archive3dPreload) {
+      window.__archive3dPreload = fetch('./assets/archive-cassette.glb', { cache: 'force-cache' }).catch(function() {});
+    }
     var options = '<option value="">ALL DECKS 全部卡组</option>' + (decks || []).map(function(d) {
       return '<option value="' + d.id + '">' + escapeHtml(d.name) + ' (' + d.cardCount + ')</option>';
     }).join('');
@@ -3421,27 +3425,18 @@ function closeCardsArchive() { showCardsList(); }
 
 async function openArchive3D() {
   if (!window.Archive3D) { showToast('3D 模块还在加载，请稍后重试', 'info'); return; }
-  if (!cardsState.records || !cardsState.records.length) { showToast('没有可展示的卡片', 'error'); return; }
+  if (window.__archive3dPreload) { try { await window.__archive3dPreload; } catch (e) {} }
   var archive = $('#cards-archive');
   var list = $('#cards-list');
   var pager = $('#cards-pager');
   var toolbar = $('.cards-toolbar');
   if (!archive) return;
-  var cards = cardsState.records;
+  var cards = cardsState.records || [];
   try {
-    var allCards = [];
-    var total = 0;
-    var pageNo = 1;
-    while (pageNo <= 50) {
-      var data = await memApi('GET', '/cards?page=' + pageNo + '&size=100');
-      if (!data || !data.records || !data.records.length) break;
-      allCards = allCards.concat(data.records);
-      total = data.total || allCards.length;
-      if (allCards.length >= total) break;
-      pageNo++;
-    }
-    if (allCards.length) cards = allCards;
+    var data = await memApi('GET', '/cards?page=1&size=2000', null, 30000);
+    if (data && data.records && data.records.length) cards = data.records;
   } catch (e) {}
+  if (!cards.length) { showToast('没有可展示的卡片', 'error'); return; }
   if (list) list.style.display = 'none';
   if (pager) pager.style.display = 'none';
   if (toolbar) toolbar.style.display = 'none';
@@ -4582,6 +4577,6 @@ window.addEventListener('beforeunload', function() {
   }
 });
 </script>
-<script type="module" src="./archive3d.bundle.js?v=8"></script>
+<script type="module" src="./archive3d.bundle.js?v=12"></script>
 </body>
 </html>
