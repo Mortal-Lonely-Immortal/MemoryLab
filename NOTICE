@@ -32,3 +32,8 @@ that you have the necessary rights.
   supplied by the project author.
 
 If you are the rights holder and want an asset removed, open an issue.
+
+
+Card surface treatment (glass, scanline, lift and decrypt reveal) is visually inspired by RhineLabUI (MIT):
+https://github.com/LBEILC/RhineLabUI
+The implementation here is original CSS/JS for Memory Lab; no RhineLabUI 3D model or archive content is bundled.

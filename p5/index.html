@@ -2405,6 +2405,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 @keyframes page-loading { from { transform: scaleX(.35); transform-origin: left; opacity: .45; } to { transform: scaleX(1); transform-origin: left; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .page-loading-line { animation: none; } }
 </style>
+<link rel="stylesheet" href="teach.css">
 </head>
 <body>
 
@@ -2454,6 +2455,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
   <div class="logo">MEMORY<span>LAB</span></div>
   <div class="nav-tab active" data-page="review"><span>REVIEW 复习</span></div>
   <div class="nav-tab" data-page="documents"><span>DOCS 文档</span></div>
+  <div class="nav-tab" data-page="teach"><span>TEACH 教学</span></div>
   <div class="nav-tab" data-page="tutor"><span>TUTOR 导师</span></div>
   <div class="nav-tab" data-page="cards"><span>CARDS 卡片</span></div>
   <div class="nav-tab" data-page="stats"><span>STATS 统计</span></div>
@@ -2467,6 +2469,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 <button class="tutor-bubble" onclick="openTutorWindow()" title="AI 导师浮窗（可置顶）"><b>T</b><span>导师</span></button>
 
 <script src="/vendor/echarts.min.js"></script>
+<script src="teach.js"></script>
 <script>
 /* ================================================================
  * DeepTutor — P5 Pentagram UI (r/R=0.45饱满比例, 3层结构)
@@ -2649,10 +2652,12 @@ function loadPage(page) {
     var wipeDone = endPageWipe(wipe);
     try {
       if (state.tutorialTimer && state.tutorialTimer.running) await stopTutorialTimer();
+      if (typeof teachCleanup === 'function') teachCleanup();
       switch (page) {
         case 'review': await renderReview(main); break;
         case 'tutor': await renderTutor(main); break;
         case 'documents': await renderDocuments(main); break;
+        case 'teach': await renderTeach(main); break;
         case 'cards': await renderCards(main); break;
         case 'stats': await renderStats(main); break;
         case 'method': await renderMethodLab(main); break;
@@ -3345,15 +3350,18 @@ async function loadCards(page) {
     list.innerHTML = '<div class="empty-state"><div class="empty-icon">C</div><h3>NO CARDS 没有卡片</h3></div>';
   } else {
     list.innerHTML = data.records.map(function(c) {
-      return '<div class="card-row"><div class="front">' + escapeHtml(c.front) +
+      return '<div class="card-row rhine-card" data-card-id="' + c.id + '">' +
+        '<div class="front"><span class="rhine-index">X-' + String(c.id).padStart(3, '0') + '</span>' + escapeHtml(c.front) +
         '<div class="card-back">' + escapeHtml(c.back || '') + '</div>' +
-        '<div class="card-extra">' + escapeHtml(c.extra || '') + '</div></div>' +
+        '<div class="card-extra">' + escapeHtml(c.extra || '') + '</div>' +
+        '<div class="rhine-hint">CLICK TO REVEAL · 点击翻开</div></div>' +
         '<div class="meta">' + (c.suspended ? '暂停' : stateName(c.state)) + '<br>#' + c.id +
         '<div class="card-reps">' + (c.reps || 0) + ' 复习 / ' + (c.lapses || 0) + ' 遗忘</div></div>' +
         '<div class="card-actions"><button class="btn btn-sm" onclick="openCardModal(' + c.id + ')">EDIT</button>' +
         '<button class="btn btn-sm" onclick="toggleCardSuspend(' + c.id + ',' + (!!c.suspended) + ')">' + (c.suspended ? '恢复' : '暂停') + '</button>' +
         '<button class="btn btn-sm btn-danger" onclick="deleteCard(' + c.id + ')">删除</button></div></div>';
     }).join('');
+    if (typeof bindRhineCards === 'function') bindRhineCards(list);
   }
   var pages = Math.max(1, Math.ceil(cardsState.total / cardsState.size));
   $('#cards-page-label').textContent = cardsState.page + ' / ' + pages + ' · ' + cardsState.total + ' cards';
@@ -4469,6 +4477,7 @@ loadPage((location.hash || '#review').slice(1));
 initThemeIntro();
 
 window.addEventListener('beforeunload', function() {
+  if (typeof teachCleanup === 'function') teachCleanup();
   if (state.tutorialTimer && state.tutorialTimer.running) {
     var timer = state.tutorialTimer;
     navigator.sendBeacon(API + '/documents/' + timer.docId + '/study-time',

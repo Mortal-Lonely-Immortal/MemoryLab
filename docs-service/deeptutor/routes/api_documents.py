@@ -17,7 +17,7 @@
 import os
 import uuid
 import threading
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from deeptutor.config import Config
 from deeptutor.database import get_db
@@ -165,8 +165,14 @@ def list_documents():
     """获取用户上传的所有文档列表，按时间倒序"""
     user_id = request.args.get('user_id', 1)
     conn = get_db()
-    docs = conn.execute('''SELECT * FROM documents
-        WHERE user_id = ? ORDER BY created_at DESC''', (int(user_id),)).fetchall()
+    docs = conn.execute('''SELECT d.*,
+        (SELECT COUNT(*) FROM document_blocks b WHERE b.document_id = d.id
+          AND b.block_type IN ('text','heading','slide_title')) AS total_blocks,
+        (SELECT COUNT(*) FROM document_blocks b WHERE b.document_id = d.id
+          AND b.block_type IN ('text','heading','slide_title')
+          AND b.simplified_text IS NOT NULL AND b.simplified_text != '') AS simplified_blocks
+        FROM documents d
+        WHERE d.user_id = ? ORDER BY d.created_at DESC''', (int(user_id),)).fetchall()
     conn.close()
     return jsonify([dict(d) for d in docs])
 
@@ -666,6 +672,22 @@ def export_cards(doc_id):
     finally:
         if path and os.path.exists(path):
             os.remove(path)
+
+
+@documents_bp.route('/<int:doc_id>/download', methods=['GET'])
+def download_document(doc_id):
+    """Open/download the original uploaded file for external viewing."""
+    conn = get_db()
+    doc = conn.execute('SELECT * FROM documents WHERE id = ?', (doc_id,)).fetchone()
+    conn.close()
+    if not doc:
+        return jsonify({"error": "文档不存在"}), 404
+    return send_from_directory(
+        Config.UPLOAD_FOLDER,
+        doc['filename'],
+        as_attachment=False,
+        download_name=doc['original_name'],
+    )
 
 
 @documents_bp.route('/<int:doc_id>/delete', methods=['POST'])
