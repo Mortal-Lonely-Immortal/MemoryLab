@@ -16,6 +16,7 @@ import json
 import secrets
 from deeptutor.config import Config
 from deeptutor.services.table_formatter import format_tables_in_response
+from deeptutor.learning_skill import LEARN_SKILL_TEXT, read_reference
 from typing import Optional
 
 
@@ -106,6 +107,24 @@ class LLMService:
                         "properties": {}
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "read_learning_skill_reference",
+                    "description": "读取内置 learn v7 学习 skill 的参考文件（定靶子、材料模式、讲义格式、图式、出题、复习计划）。进入 learn 模式后按需调用。",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "enum": ["mission", "modes", "lesson-format", "figure-spec", "quiz-rules", "review-plan"],
+                                "description": "参考文件名"
+                            }
+                        },
+                        "required": ["name"]
+                    }
+                }
             }
         ]
         # 工具名 → 实际函数的映射表，_execute_tool 用它来分发调用
@@ -113,6 +132,7 @@ class LLMService:
             "search_textbook": self._search_textbook,
             "get_study_progress": self._get_study_progress,
             "get_user_skills": self._get_user_skills,
+            "read_learning_skill_reference": self._read_learning_skill_reference,
         }
 
     def _headers(self):
@@ -124,6 +144,10 @@ class LLMService:
         }
 
     # ========== Agent 工具函数 ==========
+
+    def _read_learning_skill_reference(self, name: str) -> str:
+        """读取内置 learn v7 的参考文件。"""
+        return read_reference(name)
 
     def _search_textbook(self, keyword: str) -> str:
         """在已上传教材的 document_blocks 中全文搜索关键词，返回匹配段落"""
@@ -349,18 +373,28 @@ class LLMService:
         """
         AI导师模式：以专业耐心的导师身份回答学生问题。
 
-        System Prompt设计要点：
-          1. 简单易懂的语言
-          2. 复杂概念先概述再深入
-          3. 举例说明
-          4. 引导性提问鼓励思考
-          5. 感知困惑时主动降级讲解
-
-        参数：
-            question: 学生的问题文本
-            chat_history: 最近对话历史（最多10轮），用于上下文连贯
+        内置 learn v7 学习 skill：当用户要学懂课本/PPT/源码、做讲义、
+        出题或排复习时，按 skill 的 9 步流程执行；普通问答保持简洁答疑。
         """
+        skill = LEARN_SKILL_TEXT.strip()
+        learn_rules = (
+            "你内置了 learn v7 学习 skill。先判断用户意图：\n"
+            "- 如果用户要“学懂/学习/讲义/课本/PPT/源码/复习/出题/带我学”，进入 learn 模式。\n"
+            "- 进入 learn 模式后必须先做第 0 步：问清目标、经验、离 deadline 的时间；\n"
+            "  问不到就不定范围，不要直接整篇开讲。\n"
+            "- 一次只推进一个主题；讲解与原文分开标注；没有实际作答不得标“已掌握”。\n"
+            "- 需要参考文件时调用 read_learning_skill_reference(name)，不要臆造细则。\n"
+            "- 普通概念问答、问候、学习方法咨询不要强行套用 learn 流程。\n"
+        )
+        if skill:
+            learn_rules += "\n【learn v7 SKILL.md】\n" + skill + "\n"
+        else:
+            learn_rules += (
+                "\n核心不变量：一页纸复述；原文/解释/推断分开；"
+                "没有作答不标已掌握；5 题=2 回忆+2 应用+1 反例。\n"
+            )
         system_prompt = (
+            learn_rules + "\n"
             "你是一位专业且耐心的AI导师。你的任务是：\n"
             "1. 用简单易懂的语言解答学生的问题\n"
             "2. 如果问题涉及复杂概念，先给出简要概述再深入讲解\n"
@@ -370,7 +404,8 @@ class LLMService:
             "你有以下工具可以调用：\n"
             "- search_textbook(keyword)：搜索已上传教材中与某概念相关的内容\n"
             "- get_study_progress(topic)：查询学生对某主题的学习进度\n"
-            "- get_user_skills()：列出学生所有课程的学习进度\n\n"
+            "- get_user_skills()：列出学生所有课程的学习进度\n"
+            "- read_learning_skill_reference(name)：读取 learn v7 的参考文件\n\n"
             "重要规则：\n"
             "- 学生问教材内容时，优先调用 search_textbook，而不是凭记忆回答\n"
             "- 学生问'我学过什么'/'我的进度'时，调用对应工具查真实数据\n"

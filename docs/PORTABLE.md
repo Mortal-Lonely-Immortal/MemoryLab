@@ -58,6 +58,7 @@ pyinstaller --noconfirm --clean --onedir --name MemoryLabDocs `
   --specpath $env:TEMP\memorylab-docs `
   --exclude-module torch --exclude-module pandas --exclude-module scipy `
   --exclude-module sklearn --exclude-module matplotlib `
+  --add-data "$PWD\deeptutor\skills\learn;deeptutor/skills/learn" `
   portable_entry.py
 cd ..
 

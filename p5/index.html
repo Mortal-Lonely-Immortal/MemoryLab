@@ -281,6 +281,11 @@ textarea { resize: vertical; min-height: 80px; }
 .skeleton-line:last-child { width: 55%; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 .chat-input-row { display: flex; gap: 10px; }
+.tutor-skill-badge {
+  display: inline-flex; align-items: center; margin-left: 8px; padding: 3px 6px;
+  border: 1px solid var(--accent); color: var(--accent);
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px;
+}
 .chat-input-row input { flex: 1; }
 
 /* ================================================================
@@ -2670,7 +2675,7 @@ async function renderTutor(main) {
   main.innerHTML =
     renderWeatherBoardHTML() +
     '<div class="p5-card" style="max-width:900px;margin:0 auto;">' +
-      '<div class="p5-card-header">AI TUTOR 导师 <button class="btn btn-sm" style="margin-left:auto;" onclick="openTutorWindow()">FLOAT 浮窗</button></div>' +
+      '<div class="p5-card-header">AI TUTOR 导师 <span class="tutor-skill-badge">LEARN v7</span><button class="btn btn-sm" style="margin-left:auto;" onclick="startLearnTutor()">LEARN 学懂材料</button><button class="btn btn-sm" onclick="openTutorWindow()">FLOAT 浮窗</button></div>' +
       '<div class="chat-container" id="chat-box">' +
         (history.length === 0
           ? '<div class="empty-state"><div class="empty-icon">?</div><h3>BEGIN CONVERSATION 开始对话</h3><p>Ask the AI tutor about course topics · 向 AI 导师提问课程内容</p></div>'
@@ -2859,11 +2864,17 @@ function renderWeatherBoardHTML() {
 
 async function sendMessage() {
   var input = $('#chat-input');
-  var question = input.value.trim();
-  if (!question) return;
+  var raw = input.value.trim();
+  if (!raw) return;
+  var isLearn = /^\/learn\b/i.test(raw);
+  var question = raw.replace(/^\/learn\s*/i, '').trim();
+  if (isLearn) {
+    if (!question) question = '请按内置 learn v7 流程带我学懂一份材料，先做第 0 步。';
+    question = '请按内置 learn v7 学习 skill 执行。\n' + question;
+  }
   input.value = ''; input.focus();
   var box = $('#chat-box');
-  box.innerHTML += '<div class="chat-msg user">' + question + '</div>';
+  box.innerHTML += '<div class="chat-msg user">' + raw + '</div>';
   box.innerHTML += '<div class="skeleton-msg" id="loading-msg"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div>';
   box.scrollTop = box.scrollHeight;
   var data = await api('POST', '/tutor/chat', { question:question, user_id:userId }, 120000);
@@ -2871,6 +2882,13 @@ async function sendMessage() {
   if (loading) loading.remove();
   box.innerHTML += '<div class="chat-msg assistant">' + (data.answer || data.error) + '</div>';
   box.scrollTop = box.scrollHeight;
+}
+
+function startLearnTutor() {
+  var input = $('#chat-input');
+  if (!input) return;
+  input.value = '/learn ';
+  input.focus();
 }
 
 async function clearHistory() {
