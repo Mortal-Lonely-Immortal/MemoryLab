@@ -134,6 +134,102 @@
 #cards-archive { display: none; }
 #cards-archive.is-on { display: block; }
 
+
+/* ---------------------------------------------------------------
+   Theme-aware archive shell: P5 teal-black / P3 blue-white
+   --------------------------------------------------------------- */
+html[data-theme="black"] .archive3d-shell {
+  background: #0f1b1c; color: #e7f1ee; border-color: #2b4141;
+}
+html[data-theme="black"] .archive3d-top {
+  background: linear-gradient(180deg, rgba(15,27,28,.98), rgba(15,27,28,.78));
+}
+html[data-theme="black"] .archive3d-kicker { color: #6f8782; }
+html[data-theme="black"] .archive3d-title { color: #e7f1ee; }
+html[data-theme="black"] .archive3d-title em { color: #3f9d95; }
+html[data-theme="black"] .archive3d-top .btn {
+  background: #132021; color: #e7f1ee; border-color: #3a5252; box-shadow: 2px 2px 0 #000;
+}
+html[data-theme="black"] .archive3d-top .btn:hover {
+  background: #c46a6a; color: #fff; border-color: #c46a6a;
+}
+html[data-theme="black"] .archive3d-pagebar {
+  background: rgba(15,27,28,.9); border-color: #2b4141;
+}
+html[data-theme="black"] .archive3d-pageinfo { color: #9db2ac; }
+html[data-theme="black"] .archive3d-pagebar .btn {
+  background: #132021; color: #e7f1ee; border-color: #3a5252; box-shadow: 1px 1px 0 #000;
+}
+html[data-theme="black"] .archive3d-pagebar .btn:hover:not(:disabled) {
+  background: #3f9d95; color: #071112; border-color: #3f9d95;
+}
+html[data-theme="black"] .archive3d-col { border-color: #3a5252; color: #9db2ac; }
+html[data-theme="black"] .archive3d-col:hover:not(:disabled) { border-color: #3f9d95; color: #cfeaf6; }
+html[data-theme="black"] .archive3d-col.is-active { background: #3f9d95; border-color: #3f9d95; color: #071112; }
+html[data-theme="black"] .archive3d-view {
+  background: radial-gradient(ellipse at 50% 35%, #1a2b2b 0%, #0d1718 58%, #081011 100%);
+}
+html[data-theme="black"] .archive3d-loading { background: rgba(13,23,24,.9); color: #9db2ac; }
+html[data-theme="black"] .archive3d-foot { border-color: #2b4141; color: #6f8782; }
+html[data-theme="black"] .archive3d-detail {
+  background: #0f1b1c; border-color: #3a5252; color: #e7f1ee;
+  box-shadow: 7px 7px 0 rgba(0,0,0,.55);
+}
+html[data-theme="black"] .archive3d-detail-head { border-color: #3a5252; color: #cfeaf6; }
+html[data-theme="black"] .archive3d-detail-label { color: #6f8782; }
+html[data-theme="black"] .archive3d-detail-body h2 { color: #e7f1ee; }
+html[data-theme="black"] .archive3d-detail-body p { color: #e7f1ee; -webkit-text-fill-color: #e7f1ee; }
+html[data-theme="black"] .archive3d-detail-extra { color: #b8c9c4; border-color: #3a5252; }
+html[data-theme="black"] .archive3d-detail-foot { border-color: #3a5252; color: #9db2ac; }
+html[data-theme="black"] .archive3d-close { color: #e7f1ee; border-color: #3a5252; }
+html[data-theme="black"] .archive3d-close:hover { background: #c46a6a; border-color: #c46a6a; color: #fff; }
+
+html[data-theme="white"] .archive3d-shell {
+  background: #f8fcff; color: #0a1230; border-color: #b9d6e7;
+}
+html[data-theme="white"] .archive3d-top {
+  background: linear-gradient(180deg, rgba(248,252,255,.98), rgba(248,252,255,.8));
+}
+html[data-theme="white"] .archive3d-kicker { color: #6b7f99; }
+html[data-theme="white"] .archive3d-title { color: #0a1230; }
+html[data-theme="white"] .archive3d-title em { color: #1b57ff; }
+html[data-theme="white"] .archive3d-top .btn {
+  background: #fff; color: #0a1230; border-color: #1b57ff; box-shadow: 2px 2px 0 #b9d6e7;
+}
+html[data-theme="white"] .archive3d-top .btn:hover {
+  background: #1b57ff; color: #fff; border-color: #1b57ff;
+}
+html[data-theme="white"] .archive3d-pagebar {
+  background: rgba(237,247,253,.9); border-color: #b9d6e7;
+}
+html[data-theme="white"] .archive3d-pageinfo { color: #3d4a66; }
+html[data-theme="white"] .archive3d-pagebar .btn {
+  background: #fff; color: #0a1230; border-color: #8fb8d0; box-shadow: 1px 1px 0 #b9d6e7;
+}
+html[data-theme="white"] .archive3d-pagebar .btn:hover:not(:disabled) {
+  background: #1b57ff; color: #fff; border-color: #1b57ff;
+}
+html[data-theme="white"] .archive3d-col { border-color: #8fb8d0; color: #3d4a66; }
+html[data-theme="white"] .archive3d-col:hover:not(:disabled) { border-color: #1b57ff; color: #1b57ff; }
+html[data-theme="white"] .archive3d-col.is-active { background: #1b57ff; border-color: #1b57ff; color: #fff; }
+html[data-theme="white"] .archive3d-view {
+  background: radial-gradient(ellipse at 50% 35%, #ffffff 0%, #eef5f9 58%, #dfeef7 100%);
+}
+html[data-theme="white"] .archive3d-loading { background: rgba(248,252,255,.9); color: #6b7f99; }
+html[data-theme="white"] .archive3d-foot { border-color: #b9d6e7; color: #6b7f99; }
+html[data-theme="white"] .archive3d-detail {
+  background: #f8fcff; border-color: #8fb8d0; color: #0a1230;
+  box-shadow: 7px 7px 0 rgba(27,87,255,.16);
+}
+html[data-theme="white"] .archive3d-detail-head { border-color: #1b57ff; color: #1b57ff; }
+html[data-theme="white"] .archive3d-detail-label { color: #6b7f99; }
+html[data-theme="white"] .archive3d-detail-body h2 { color: #0a1230; }
+html[data-theme="white"] .archive3d-detail-body p { color: #0a1230; -webkit-text-fill-color: #0a1230; }
+html[data-theme="white"] .archive3d-detail-extra { color: #3d4a66; border-color: #b9d6e7; }
+html[data-theme="white"] .archive3d-detail-foot { border-color: #8fb8d0; color: #3d4a66; }
+html[data-theme="white"] .archive3d-close { color: #0a1230; border-color: #8fb8d0; }
+html[data-theme="white"] .archive3d-close:hover { background: #1b57ff; border-color: #1b57ff; color: #fff; }
+
 @media (max-width: 900px) {
   .archive3d-shell { min-height: 560px; }
   .archive3d-view { min-height: 460px; }
