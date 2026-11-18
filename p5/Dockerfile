@@ -4,7 +4,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY index.html /usr/share/nginx/html/index.html
 COPY teach.js /usr/share/nginx/html/teach.js
 COPY teach.css /usr/share/nginx/html/teach.css
-COPY archive3d.js /usr/share/nginx/html/archive3d.js
+COPY archive3d.bundle.js /usr/share/nginx/html/archive3d.bundle.js
 COPY archive3d.css /usr/share/nginx/html/archive3d.css
 COPY vendor /usr/share/nginx/html/vendor
 COPY assets /usr/share/nginx/html/assets

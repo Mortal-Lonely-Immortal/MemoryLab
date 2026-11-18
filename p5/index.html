@@ -2406,7 +2406,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 @media (prefers-reduced-motion: reduce) { .page-loading-line { animation: none; } }
 </style>
 <link rel="stylesheet" href="teach.css">
-<link rel="stylesheet" href="archive3d.css">
+<link rel="stylesheet" href="archive3d.css?v=2">
 </head>
 <body>
 
@@ -3386,7 +3386,7 @@ function showCardsList() {
 
 function closeCardsArchive() { showCardsList(); }
 
-function openArchive3D() {
+async function openArchive3D() {
   if (!window.Archive3D) { showToast('3D 模块还在加载，请稍后重试', 'info'); return; }
   if (!cardsState.records || !cardsState.records.length) { showToast('没有可展示的卡片', 'error'); return; }
   var archive = $('#cards-archive');
@@ -3394,13 +3394,18 @@ function openArchive3D() {
   var pager = $('#cards-pager');
   var toolbar = $('.cards-toolbar');
   if (!archive) return;
+  var cards = cardsState.records;
+  try {
+    var data = await memApi('GET', '/cards?page=1&size=40');
+    if (data && data.records && data.records.length) cards = data.records;
+  } catch (e) {}
   if (list) list.style.display = 'none';
   if (pager) pager.style.display = 'none';
   if (toolbar) toolbar.style.display = 'none';
   archive.classList.add('is-on');
   window.Archive3D.open({
     container: archive,
-    cards: cardsState.records.slice(0, 20),
+    cards: cards,
     decks: cardsState.decks || [],
     onClose: function () {
       archive.classList.remove('is-on');
@@ -4534,7 +4539,6 @@ window.addEventListener('beforeunload', function() {
   }
 });
 </script>
-<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
-<script type="module" src="./archive3d.js?v=11"></script>
+<script type="module" src="./archive3d.bundle.js?v=3"></script>
 </body>
 </html>
