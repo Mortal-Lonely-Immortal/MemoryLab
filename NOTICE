@@ -1,4 +1,4 @@
-﻿Memory Lab — third-party notices and asset credits
+Memory Lab — third-party notices and asset credits
 ==================================================
 
 Code
@@ -36,11 +36,10 @@ If you are the rights holder and want an asset removed, open an issue.
 
 Card surface treatment (glass, scanline, lift and decrypt reveal) is visually inspired by RhineLabUI (MIT):
 https://github.com/LBEILC/RhineLabUI
-The implementation here is original CSS/JS for Memory Lab; no RhineLabUI 3D model or archive content is bundled.
-
+The implementation here is original CSS/JS for Memory Lab.
 
 3D archive view:
-- RhineLabUI archive-cassette.glb model and visual reference (MIT):
+- RhineLabUI ArchiveScene / archive-cassette.glb / SSAO-lens archive composition (MIT):
   https://github.com/LBEILC/RhineLabUI
 - Three.js r183 (MIT): https://threejs.org/
-The GLB file is bundled unmodified for the optional ARCHIVE 3D card view.
+The archive scene source and GLB are bundled unmodified except for the Memory Lab data/label wiring for the optional ARCHIVE 3D card view.
