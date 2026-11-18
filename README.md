@@ -13,7 +13,7 @@
 到 GitHub 的 **Releases** 页面下载：
 
 ```text
-MemoryLab-Portable-1.0.7-win64.zip
+MemoryLab-Portable-1.0.8-win64.zip
 ```
 
 1. 解压到有写权限的目录（不要放 `Program Files`）；
@@ -122,6 +122,7 @@ Docker 开发版：
 ## 五维与导师浮窗
 
 - **五维成长**：统计页默认是 P5 黄色五角星（暗基底星 + 5 层刻度 + 金色分面数值星 + 黄底标签），也可切雷达。成长规则沿用 Velvet：初始全为 Lv.1 / 0 点，阈值 40 / 200 / 350 / 500；复习 +知识，挑战 +胆量，生成卡 +灵巧，导师提问 +温柔/魅力，点数保存在本机 `localStorage`。白色主题自动改为深蓝星面/标签。
+- **ARCHIVE 3D**：卡片页新增独立三维视图。使用 RhineLabUI 的 archive-cassette GLB、Three.js 和 OrbitControls，渲染 5 列档案盒阵列；点击档案盒后镜头推进、盒体抬起，右侧显示卡片详情。支持拖拽旋转、滚轮缩放、重置和返回列表。模型/视觉来源见 NOTICE。
 - **TEACH 教学**：新导航页。支持文件/文件夹选择与拖拽导入、AI 简化资料、本软件阅读器、可调番茄钟、本地音乐文件夹播放和系统媒体键；阅读器与番茄钟在“本应用观看”时展开。
 - **资料落点**：原始文件保存在 `data/docs/uploads/`，提取后的文本块存入 `data/docs/tutor.db` 的 `document_blocks`；导师通过 `search_textbook` 检索这些块，简化结果写回 `simplified_text`。
 - **音乐**：本地音乐用浏览器 File/ObjectURL 播放，不上传；系统媒体通过 Windows 全局媒体键控制当前播放器，不读取歌单/歌名。

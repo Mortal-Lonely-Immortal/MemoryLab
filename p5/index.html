@@ -2406,6 +2406,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 @media (prefers-reduced-motion: reduce) { .page-loading-line { animation: none; } }
 </style>
 <link rel="stylesheet" href="teach.css">
+<link rel="stylesheet" href="archive3d.css">
 </head>
 <body>
 
@@ -2653,6 +2654,7 @@ function loadPage(page) {
     try {
       if (state.tutorialTimer && state.tutorialTimer.running) await stopTutorialTimer();
       if (typeof teachCleanup === 'function') teachCleanup();
+      if (typeof closeCardsArchive === 'function') closeCardsArchive();
       switch (page) {
         case 'review': await renderReview(main); break;
         case 'tutor': await renderTutor(main); break;
@@ -3315,7 +3317,7 @@ async function renderCards(main) {
     var options = '<option value="">ALL DECKS 全部卡组</option>' + (decks || []).map(function(d) {
       return '<option value="' + d.id + '">' + escapeHtml(d.name) + ' (' + d.cardCount + ')</option>';
     }).join('');
-    main.innerHTML = '<div class="p5-card"><div class="p5-card-header">CARD BROWSER 卡片管理<button class="btn btn-sm btn-primary" style="margin-left:auto;" onclick="openCardModal(null)">NEW 新建</button></div>' +
+    main.innerHTML = '<div class="p5-card"><div class="p5-card-header">CARD BROWSER 卡片管理<span style="margin-left:auto;display:flex;gap:5px;"><button class="btn btn-sm" onclick="showCardsList()">LIST 列表</button><button class="btn btn-sm" onclick="openArchive3D()">ARCHIVE 3D</button><button class="btn btn-sm btn-primary" onclick="openCardModal(null)">NEW 新建</button></span></div>' +
       '<div class="cards-toolbar">' +
         '<input id="card-q" placeholder="Search 搜索..." value="' + escapeHtml(cardsState.q) + '" onkeypress="if(event.key===\'Enter\'){cardsState.q=this.value;loadCards(1);}">' +
         '<select id="card-deck" onchange="cardsState.deckId=this.value;loadCards(1);">' + options + '</select>' +
@@ -3325,9 +3327,10 @@ async function renderCards(main) {
         '<button class="btn btn-primary" onclick="cardsState.q=$(\'#card-q\').value;loadCards(1)">SEARCH 搜索</button>' +
       '</div>' +
       '<div id="cards-list"><p style="color:var(--text-dim);">Loading...</p></div>' +
-      '<div class="pager"><button class="btn btn-sm" id="cards-prev" onclick="loadCards(cardsState.page-1)">PREV</button>' +
+      '<div class="pager" id="cards-pager"><button class="btn btn-sm" id="cards-prev" onclick="loadCards(cardsState.page-1)">PREV</button>' +
       '<span id="cards-page-label"></span>' +
       '<button class="btn btn-sm" id="cards-next" onclick="loadCards(cardsState.page+1)">NEXT</button></div>' +
+      '<div id="cards-archive"></div>' +
       '</div>';
     await loadCards(1);
   } catch (e) {
@@ -3367,6 +3370,46 @@ async function loadCards(page) {
   $('#cards-page-label').textContent = cardsState.page + ' / ' + pages + ' · ' + cardsState.total + ' cards';
   $('#cards-prev').disabled = cardsState.page <= 1;
   $('#cards-next').disabled = cardsState.page >= pages;
+}
+
+function showCardsList() {
+  if (window.Archive3D) { try { window.Archive3D.close(); } catch (e) {} }
+  var archive = $('#cards-archive');
+  var list = $('#cards-list');
+  var pager = $('#cards-pager');
+  var toolbar = $('.cards-toolbar');
+  if (archive) { archive.classList.remove('is-on'); archive.innerHTML = ''; }
+  if (list) list.style.display = '';
+  if (pager) pager.style.display = '';
+  if (toolbar) toolbar.style.display = '';
+}
+
+function closeCardsArchive() { showCardsList(); }
+
+function openArchive3D() {
+  if (!window.Archive3D) { showToast('3D 模块还在加载，请稍后重试', 'info'); return; }
+  if (!cardsState.records || !cardsState.records.length) { showToast('没有可展示的卡片', 'error'); return; }
+  var archive = $('#cards-archive');
+  var list = $('#cards-list');
+  var pager = $('#cards-pager');
+  var toolbar = $('.cards-toolbar');
+  if (!archive) return;
+  if (list) list.style.display = 'none';
+  if (pager) pager.style.display = 'none';
+  if (toolbar) toolbar.style.display = 'none';
+  archive.classList.add('is-on');
+  window.Archive3D.open({
+    container: archive,
+    cards: cardsState.records.slice(0, 20),
+    decks: cardsState.decks || [],
+    onClose: function () {
+      archive.classList.remove('is-on');
+      archive.innerHTML = '';
+      if (list) list.style.display = '';
+      if (pager) pager.style.display = '';
+      if (toolbar) toolbar.style.display = '';
+    }
+  });
 }
 
 function closeCardModal() {
@@ -4476,7 +4519,13 @@ function replayP3Intro() {
 loadPage((location.hash || '#review').slice(1));
 initThemeIntro();
 
+window.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && $('#cards-archive') && $('#cards-archive').classList.contains('is-on')) {
+    closeCardsArchive();
+  }
+});
 window.addEventListener('beforeunload', function() {
+  if (window.Archive3D) { try { window.Archive3D.close(); } catch (e) {} }
   if (typeof teachCleanup === 'function') teachCleanup();
   if (state.tutorialTimer && state.tutorialTimer.running) {
     var timer = state.tutorialTimer;
@@ -4485,5 +4534,7 @@ window.addEventListener('beforeunload', function() {
   }
 });
 </script>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+<script type="module" src="./archive3d.js?v=11"></script>
 </body>
 </html>

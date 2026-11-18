@@ -1,0 +1,122 @@
+/* ================================================================
+   ARCHIVE 3D — ivory Rhine-style memory archive
+   ================================================================ */
+.archive3d-shell {
+  position: relative;
+  border: 1px solid var(--border, #2b4141);
+  background: #f1eee6;
+  color: #17130f;
+  overflow: hidden;
+  min-height: 680px;
+  display: flex; flex-direction: column;
+}
+.archive3d-top {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 16px 18px 12px;
+  background: linear-gradient(180deg, rgba(241,238,230,.98), rgba(241,238,230,.75));
+  position: relative; z-index: 4;
+}
+.archive3d-kicker { font-family: var(--font-mono); font-size: 8px; letter-spacing: 2.4px; color: #7f7466; }
+.archive3d-title {
+  font-family: var(--font-display); font-size: 34px; line-height: .95; letter-spacing: 1px;
+  margin-top: 4px; color: #17130f;
+}
+.archive3d-title em { color: #b8291e; font-style: normal; }
+.archive3d-top-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.archive3d-top .btn {
+  background: #fbf8f1; color: #17130f; border: 1px solid #17130f;
+  box-shadow: 2px 2px 0 #17130f;
+}
+.archive3d-top .btn:hover { background: #b8291e; color: #fff; border-color: #b8291e; box-shadow: 2px 2px 0 #17130f; }
+.archive3d-view {
+  position: relative; isolation: isolate; flex: 1; min-height: 560px;
+  background: radial-gradient(ellipse at 50% 35%, #fbf8f1 0%, #eee9df 58%, #e5ded1 100%);
+}
+.archive3d-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: 0; z-index: 0; }
+.archive3d-loading {
+  position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; color: #6f665b;
+  background: rgba(241,238,230,.86); pointer-events: none;
+  transition: opacity .35s;
+}
+.archive3d-loading.is-done { opacity: 0; }
+.archive3d-cols {
+  position: absolute; left: 0; right: 0; bottom: 10px; z-index: 2;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 0 16px;
+  pointer-events: none;
+}
+.archive3d-cols span {
+  text-align: center; font-family: var(--font-mono); font-size: 8px; letter-spacing: .8px;
+  color: #6f665b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.archive3d-hint {
+  position: absolute; left: 16px; bottom: 32px; z-index: 2;
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: 1px; color: #8a7e6e;
+  pointer-events: none;
+}
+.archive3d-foot {
+  display: flex; justify-content: space-between; gap: 8px;
+  padding: 8px 18px; border-top: 1px solid rgba(23,19,15,.22);
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: 1.2px; color: #7f7466;
+}
+.archive3d-detail {
+  position: fixed; top: 200px; right: 24px; bottom: 32px; z-index: 1000;
+  width: min(390px, 42%);
+  background: #faf7f0;
+  isolation: isolate;
+  z-index: 20;
+  transform: translateZ(0);
+  will-change: transform;
+  box-shadow: 8px 8px 0 rgba(0,0,0,.25);
+  border: 1px solid #17130f;
+  box-shadow: 7px 7px 0 rgba(23,19,15,.18);
+  display: none; flex-direction: column;
+  overflow: hidden;
+}
+.archive3d-detail.is-on { display: flex; }
+.archive3d-detail-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 12px; border-bottom: 2px solid #17130f;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; color: #17130f;
+}
+.archive3d-close {
+  width: 24px; height: 24px; border: 1px solid #17130f; background: transparent;
+  color: #17130f; font-size: 18px; line-height: 1; cursor: pointer;
+}
+.archive3d-close:hover { background: #b8291e; border-color: #b8291e; color: #fff; }
+.archive3d-detail-body { padding: 14px; overflow: auto; flex: 1; }
+.archive3d-detail-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 1.5px; color: #8a7e6e; margin: 12px 0 4px; }
+.archive3d-detail-body h2 {
+  font-family: var(--font-display); font-size: 21px; line-height: 1.25; color: #17130f;
+  margin: 0 0 8px; letter-spacing: .2px;
+}
+.archive3d-detail-body p {
+  margin: 0 0 10px; color: #000; -webkit-text-fill-color: #000; font-size: 13px; line-height: 1.75; white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.archive3d-detail-extra {
+  margin-top: 8px; padding-top: 8px; border-top: 1px dashed #bdb3a3;
+  font-size: 11px; color: #3b332b; white-space: pre-wrap;
+}
+.archive3d-detail-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 12px; border-top: 1px solid #17130f;
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: .8px; color: #6f665b;
+}
+.archive3d-detail-foot .btn { border-color: #17130f; box-shadow: 2px 2px 0 #17130f; }
+.archive3d-detail-foot .btn-primary { background: #b8291e; border-color: #b8291e; color: #fff; }
+
+/* The card list hides while the archive is open. */
+#cards-archive { display: none; }
+#cards-archive.is-on { display: block; }
+
+@media (max-width: 900px) {
+  .archive3d-shell { min-height: 560px; }
+  .archive3d-view { min-height: 460px; }
+  .archive3d-detail { position: absolute; left: 10px; right: 10px; top: auto; bottom: 38px; width: auto; max-height: 48%; }
+  .archive3d-cols { display: none; }
+  .archive3d-title { font-size: 26px; }
+  .archive3d-hint { font-size: 7px; }
+}
+
+body.archive3d-open .tutor-bubble { display: none !important; }
