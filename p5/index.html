@@ -1609,6 +1609,18 @@ html[data-theme="white"] .review-meta span:last-child { color: #35d1e8; }
 .rail-stat span { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); letter-spacing:1px; }
 .rail-stat b { font-family:var(--font-display); font-style:italic; font-size:20px; color:var(--accent); line-height:1; }
 .rail-note { font-size:10px; line-height:1.7; color:var(--text-muted); padding-top:12px; }
+.review-delete-btn {
+  width: 100%; margin-top: 14px; padding: 9px 10px; cursor: pointer;
+  border: 1px solid #9c3a32; background: #f3e9df; color: #7e2a24;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+}
+.review-delete-btn:hover { background: #9c3a32; color: #fff; }
+.review-delete-btn:disabled { opacity: .45; cursor: default; }
+html[data-theme="black"] .review-delete-btn { border-color:#e0a09a; color:#7e2a24; background:#f3e9df; }
+html[data-theme="black"] .review-delete-btn:hover { background:#c46a6a; color:#0d1718; }
+html[data-theme="black"] .review-delete-btn:disabled { color:#e0a09a; }
+html[data-theme="white"] .review-delete-btn { border-color:#f0417f; color:#c0265c; background:#fff; }
+html[data-theme="white"] .review-delete-btn:hover { background:#f0417f; color:#fff; }
 html[data-theme="white"] .review-rail { background:#fff; border:2px solid #071a5c; box-shadow:8px 8px 0 #cfeaf6; }
 html[data-theme="white"] .review-rail-title { color:#fff; background:#071a5c; border-bottom:3px solid #35d1e8; margin:-16px -16px 4px; padding:11px 14px 10px; clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%); }
 html[data-theme="white"] .rail-stat { border-bottom-color:#cfeaf6; }
@@ -3269,7 +3281,8 @@ function drawReviewCard() {
     '<div class="rail-stat"><span>CARD 卡片</span><b>#' + card.id + '</b></div>' +
     '<div class="rail-stat"><span>REPS 复习</span><b>' + (card.reps || 0) + '</b></div>' +
     '<div class="rail-stat"><span>LAPSES 遗忘</span><b>' + (card.lapses || 0) + '</b></div>' +
-    '<div class="rail-note">先在心里回答，再显示答案。评分只影响这张卡的下次到期。</div></div>';
+    '<div class="rail-note">先在心里回答，再显示答案。评分只影响这张卡的下次到期。</div>' +
+    '<button class="review-delete-btn" id="review-delete-btn" onclick="deleteReviewCard()">DELETE 删除本卡</button></div>';
   html += '</div>';
   main.innerHTML = html;
 }
@@ -3306,6 +3319,26 @@ async function rateReview(rating) {
   } catch (e) {
     showToast(e.message, 'error');
     buttons.forEach(function(b) { b.disabled = false; b.style.opacity = '1'; });
+  }
+}
+
+async function deleteReviewCard() {
+  var item = reviewState.queue[reviewState.idx];
+  if (!item) return;
+  if (!window.confirm('删除这张卡？\n\n#' + item.card.id + '  ' + item.card.front.slice(0, 80) + '\n\n删除后本轮会直接跳到下一张。')) return;
+  var btn = document.getElementById('review-delete-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'DELETING...'; }
+  try {
+    await memApi('DELETE', '/cards/' + item.card.id);
+    cardsState.records = (cardsState.records || []).filter(function(c) { return c.id !== item.card.id; });
+    reviewState.queue.splice(reviewState.idx, 1);
+    reviewState.revealed = false;
+    reviewState.startedAt = Date.now();
+    showToast('已删除卡片 #' + item.card.id, 'info');
+    drawReviewCard();
+  } catch (e) {
+    showToast(e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'DELETE 删除本卡'; }
   }
 }
 
