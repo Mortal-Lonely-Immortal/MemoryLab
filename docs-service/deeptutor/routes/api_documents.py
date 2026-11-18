@@ -24,6 +24,7 @@ from deeptutor.database import get_db
 from deeptutor.services.document_service import DocumentProcessor
 from deeptutor.services.llm_service import shared_llm as llm
 from deeptutor.services.card_export import build_cards_docx, import_to_memory
+from deeptutor.services.tutorial_export import build_tutorial, open_tutorial_folder
 
 documents_bp = Blueprint('documents', __name__)
 
@@ -700,6 +701,30 @@ def export_cards(doc_id):
     finally:
         if path and os.path.exists(path):
             os.remove(path)
+
+
+@documents_bp.route('/<int:doc_id>/tutorial/export', methods=['POST'])
+def export_tutorial(doc_id):
+    """把已提取的图文块重组成 DOCX/HTML 教程并返回本机目录。"""
+    try:
+        manifest = build_tutorial(doc_id)
+        return jsonify({"ok": True, **manifest})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": f"生成教程失败：{e}"}), 500
+
+
+@documents_bp.route('/<int:doc_id>/tutorial/reveal', methods=['POST'])
+def reveal_tutorial_folder(doc_id):
+    """在 Windows 资源管理器中打开该课件的教程文件夹。"""
+    try:
+        folder = open_tutorial_folder(doc_id)
+        return jsonify({"ok": True, "folder": folder})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": f"打开文件夹失败：{e}"}), 500
 
 
 @documents_bp.route('/<int:doc_id>/download', methods=['GET'])

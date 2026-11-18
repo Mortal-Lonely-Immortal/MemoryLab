@@ -2952,8 +2952,13 @@ async function renderDocuments(main) {
         (d.status==='uploaded' ? '<button class="btn btn-sm btn-primary" onclick="processDocument(' + d.id + ')">EXTRACT 提取</button>' : '') +
         (d.status==='processing' ? '<button class="btn btn-sm btn-warning" onclick="simplifyDocument(' + d.id + ')">SIMPLIFY ALL 全部简化</button> <button class="btn btn-sm" style="background:var(--border, #2b4141);" onclick="showChapterSelect(' + d.id + ')">SELECT 选择</button>' : '') +
         (d.status==='processed'||d.status==='processing' ? '<button class="btn btn-sm btn-success" onclick="viewTutorial(' + d.id + ')">VIEW 查看</button>' : '') +
+        (d.status==='processed'||d.status==='processing' ? '<button class="btn btn-sm btn-warning" onclick="exportTutorial(' + d.id + ',this)">TUTORIAL 图文</button>' : '') +
         '<button class="btn btn-sm btn-danger" onclick="deleteDocument(' + d.id + ')">DEL 删除</button>' +
       '</div>'; }).join('') +
+    '</div>' +
+    '<div class="p5-card" id="tutorial-export-card" style="display:none;">' +
+      '<div class="p5-card-header">TUTORIAL FILE 图文教程文件<button class="btn btn-sm" style="margin-left:auto;" onclick="document.getElementById(\'tutorial-export-card\').style.display=\'none\'">CLOSE 关闭</button></div>' +
+      '<div id="tutorial-export-body" style="padding:16px;font-size:12px;line-height:1.8;"></div>' +
     '</div>' +
     '<div class="p5-card" id="tutorial-viewer" style="display:none;">' +
       '<div class="p5-card-header">TUTORIAL 教程 <button class="btn btn-sm btn-success" id="make-cards-btn" style="display:none;margin-left:auto;margin-right:6px;" onclick="generateCards(_tutorialDocId)">MAKE CARDS 生成记忆卡</button><button class="btn btn-sm" onclick="closeTutorial()">CLOSE 关闭</button></div>' +
@@ -3076,6 +3081,52 @@ function simplifyDocument(docId) {
   });
 }
 let _tutorialDocId = null;
+async function exportTutorial(docId, btn) {
+  if (!docId) return;
+  var old = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'GENERATING...'; }
+  try {
+    var data = await api('POST', '/documents/' + docId + '/tutorial/export', {}, 180000);
+    if (data.error) throw new Error(data.error);
+    showTutorialExport(docId, data);
+    showToast('图文教程已生成 · ' + data.images + ' 张图片', 'success');
+  } catch (e) {
+    showToast(e.message || '生成教程失败', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = old || 'TUTORIAL 图文'; }
+  }
+}
+
+function showTutorialExport(docId, data) {
+  var card = document.getElementById('tutorial-export-card');
+  var body = document.getElementById('tutorial-export-body');
+  if (!card || !body) return;
+  var folder = escapeHtml(data.folder || '');
+  body.innerHTML =
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">' +
+      '<b style="font-family:var(--font-display);color:var(--accent);font-size:18px;">READY 已生成</b>' +
+      '<span style="color:var(--text-dim);">' + (data.images || 0) + ' 张图片 · ' + (data.text_blocks || 0) + ' 段文字</span>' +
+    '</div>' +
+    '<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);word-break:break-all;margin-bottom:12px;">' + folder + '</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<button class="btn btn-success" onclick="openTutorialFolder(' + docId + ')">OPEN FOLDER 打开文件夹</button>' +
+      '<button class="btn" onclick="viewTutorial(' + docId + ')">VIEW 在线查看</button>' +
+    '</div>' +
+    (data.images ? '' : '<p style="color:var(--text-dim);margin-top:10px;">这个课件没有可提取的图片，已生成纯文字教程。</p>');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function openTutorialFolder(docId) {
+  try {
+    var data = await api('POST', '/documents/' + docId + '/tutorial/reveal', {}, 15000);
+    if (data.error) throw new Error(data.error);
+    showToast('已在资源管理器中打开教程文件夹', 'success');
+  } catch (e) {
+    showToast(e.message || '打开文件夹失败', 'error');
+  }
+}
+
 async function viewTutorial(docId) {
   _tutorialDocId = docId;
   var viewer = $('#tutorial-viewer'), content = $('#tutorial-content');
