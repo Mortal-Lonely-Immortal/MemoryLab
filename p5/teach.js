@@ -341,8 +341,9 @@
       var total = Number(d.total_blocks || 0);
       var simp = Number(d.simplified_blocks || 0);
       var ready = total > 0 && simp >= total;
-      var status = total === 0 ? 'UPLOADED' : (ready ? 'SIMPLIFIED' : (simp > 0 ? 'PARTIAL' : 'EXTRACTED'));
-      var pill = ready ? 'ready' : (simp > 0 ? 'busy' : '');
+      var failed = d.status === 'error';
+      var status = failed ? 'ERROR' : (total === 0 ? 'UPLOADED' : (ready ? 'SIMPLIFIED' : (simp > 0 ? 'PARTIAL' : 'EXTRACTED')));
+      var pill = failed ? 'bad' : (ready ? 'ready' : (simp > 0 ? 'busy' : ''));
       var buttons = '';
       if (total === 0) buttons += '<button class="btn btn-sm btn-primary" onclick="teachExtractDoc(' + d.id + ')">EXTRACT 提取</button>';
       if (total > 0 && !ready) buttons += '<button class="btn btn-sm btn-primary" onclick="teachSimplifyDoc(' + d.id + ')">AI SIMPLIFY 简化</button>';
@@ -355,7 +356,7 @@
           '<div class="teach-doc-meta">' + esc(String(d.file_type || '').toUpperCase()) + ' · ' + total + ' 块 · ' + simp + ' 已简化</div></div>' +
           '<span class="teach-pill ' + pill + '">' + status + '</span></div>' +
         '<div class="teach-doc-actions">' + buttons + '</div>' +
-        '<div class="teach-note" data-doc-note="' + d.id + '"></div>' +
+        '<div class="teach-note" data-doc-note="' + d.id + '">' + (failed ? '上次简化失败，点 AI SIMPLIFY 重试' : '') + '</div>' +
       '</div>';
     }).join('');
   }

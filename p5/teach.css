@@ -70,6 +70,7 @@
 }
 .teach-pill.ready { border-color: var(--accent); color: var(--accent); }
 .teach-pill.busy { border-color: #c9a227; color: #c9a227; }
+.teach-pill.bad { border-color: var(--red, #c46a6a); color: var(--red, #c46a6a); }
 .teach-empty { padding: 24px 12px; text-align: center; color: var(--text-dim); font-size: 11px; }
 .teach-note { margin-top: 8px; font-size: 9px; color: var(--text-muted); line-height: 1.6; }
 
