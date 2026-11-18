@@ -2406,7 +2406,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 @media (prefers-reduced-motion: reduce) { .page-loading-line { animation: none; } }
 </style>
 <link rel="stylesheet" href="teach.css">
-<link rel="stylesheet" href="archive3d.css?v=2">
+<link rel="stylesheet" href="archive3d.css?v=4">
 </head>
 <body>
 
@@ -3396,8 +3396,18 @@ async function openArchive3D() {
   if (!archive) return;
   var cards = cardsState.records;
   try {
-    var data = await memApi('GET', '/cards?page=1&size=40');
-    if (data && data.records && data.records.length) cards = data.records;
+    var allCards = [];
+    var total = 0;
+    var pageNo = 1;
+    while (pageNo <= 50) {
+      var data = await memApi('GET', '/cards?page=' + pageNo + '&size=100');
+      if (!data || !data.records || !data.records.length) break;
+      allCards = allCards.concat(data.records);
+      total = data.total || allCards.length;
+      if (allCards.length >= total) break;
+      pageNo++;
+    }
+    if (allCards.length) cards = allCards;
   } catch (e) {}
   if (list) list.style.display = 'none';
   if (pager) pager.style.display = 'none';
@@ -4539,6 +4549,6 @@ window.addEventListener('beforeunload', function() {
   }
 });
 </script>
-<script type="module" src="./archive3d.bundle.js?v=3"></script>
+<script type="module" src="./archive3d.bundle.js?v=5"></script>
 </body>
 </html>

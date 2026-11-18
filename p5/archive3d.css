@@ -1,5 +1,5 @@
-/* ================================================================
-   ARCHIVE 3D — ivory Rhine-style memory archive
+﻿/* ================================================================
+   ARCHIVE 3D 鈥?ivory Rhine-style memory archive
    ================================================================ */
 .archive3d-shell {
   position: relative;
@@ -28,6 +28,30 @@
   box-shadow: 2px 2px 0 #17130f;
 }
 .archive3d-top .btn:hover { background: #b8291e; color: #fff; border-color: #b8291e; box-shadow: 2px 2px 0 #17130f; }
+.archive3d-pagebar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 7px 18px 9px; position: relative; z-index: 4;
+  border-top: 1px solid rgba(23,19,15,.16);
+  border-bottom: 1px solid rgba(23,19,15,.16);
+  background: rgba(241,238,230,.82);
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: 1px;
+}
+.archive3d-pageinfo { color: #5f554a; white-space: nowrap; }
+.archive3d-pagebtns { display: flex; gap: 5px; }
+.archive3d-pagebar .btn {
+  background: #fbf8f1; color: #17130f; border: 1px solid #17130f;
+  box-shadow: 1px 1px 0 #17130f; padding: 4px 8px; font-size: 8px;
+}
+.archive3d-pagebar .btn:hover:not(:disabled) { background: #b8291e; color: #fff; border-color: #b8291e; }
+.archive3d-pagebar .btn:disabled { opacity: .35; cursor: default; }
+.archive3d-columns { display: flex; gap: 4px; margin-left: 6px; flex-wrap: wrap; }
+.archive3d-col {
+  border: 1px solid #8a7e6e; background: transparent; color: #6f665b;
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: .8px;
+  padding: 4px 7px; cursor: pointer;
+}
+.archive3d-col:hover:not(:disabled) { border-color: #17130f; color: #17130f; }\n.archive3d-col:disabled { opacity: .3; cursor: default; }
+.archive3d-col.is-active { background: #17130f; border-color: #17130f; color: #fbf8f1; }
 .archive3d-view {
   position: relative; isolation: isolate; flex: 1; min-height: 560px;
   background: radial-gradient(ellipse at 50% 35%, #fbf8f1 0%, #eee9df 58%, #e5ded1 100%);
@@ -115,8 +139,10 @@
   .archive3d-view { min-height: 460px; }
   .archive3d-detail { position: absolute; left: 10px; right: 10px; top: auto; bottom: 38px; width: auto; max-height: 48%; }
   .archive3d-cols { display: none; }
+  .archive3d-columns { margin-left: 0; }
   .archive3d-title { font-size: 26px; }
   .archive3d-hint { font-size: 7px; }
 }
 
 body.archive3d-open .tutor-bubble { display: none !important; }
+
