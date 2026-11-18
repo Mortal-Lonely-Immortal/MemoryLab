@@ -3039,7 +3039,7 @@ async function _simplifyWithChapters(docId, chapterTitles) {
       if (pb) pb.style.width = pct + '%'; if (pp) pp.textContent = pct + '%';
       if (pt) pt.textContent = 'Simplifying 简化中 ' + p.simplified + '/' + p.total;
       if (p.status === 'processed') { clearInterval(poll); if (pd) pd.style.display = 'none'; if (se) se.textContent = 'COMPLETE 完成: ' + p.simplified + ' blocks 块'; renderDocuments($('#main-content')); }
-      else if (p.status === 'error') { clearInterval(poll); if (pd) pd.style.display = 'none'; if (se) se.textContent = 'SIMPLIFY FAILED 简化失败'; }
+      else if (p.status === 'error') { clearInterval(poll); if (pd) pd.style.display = 'none'; if (se) se.textContent = 'SIMPLIFY FAILED 简化失败: ' + (p.error || '请检查 API Key'); }
     } catch(e) { clearInterval(poll); }
   }, 800);
 }
@@ -3055,7 +3055,7 @@ function simplifyDocument(docId) {
         if (pb) pb.style.width = pct + '%'; if (pp) pp.textContent = pct + '%';
         if (pt) pt.textContent = 'Simplifying 简化中 ' + p.simplified + '/' + p.total;
         if (p.status === 'processed') { clearInterval(poll); if (pd) pd.style.display = 'none'; if (se) se.textContent = 'COMPLETE 完成: ' + p.simplified + ' blocks 块'; renderDocuments($('#main-content')); }
-        else if (p.status === 'error') { clearInterval(poll); if (pd) pd.style.display = 'none'; if (se) se.textContent = 'FAILED'; }
+        else if (p.status === 'error') { clearInterval(poll); if (pd) pd.style.display = 'none'; if (se) se.textContent = 'SIMPLIFY FAILED 简化失败: ' + (p.error || '请检查 API Key'); }
       } catch(e) { clearInterval(poll); }
     }, 800);
   });

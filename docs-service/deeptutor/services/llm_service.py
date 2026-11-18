@@ -20,6 +20,15 @@ from deeptutor.learning_skill import LEARN_SKILL_TEXT, read_reference
 from typing import Optional
 
 
+def _raise_if_llm_error(text):
+    """Turn the string errors returned by chat() into exceptions for batch jobs."""
+    if not isinstance(text, str):
+        return
+    stripped = text.strip()
+    if stripped.startswith(('API错误:', '请求失败:', '请求超时', '请先在设置中配置API密钥')):
+        raise RuntimeError(stripped)
+
+
 class LLMService:
     """
     大模型服务类，封装所有与LLM API的通信。
@@ -489,7 +498,9 @@ class LLMService:
         if not texts:
             return []
         if len(texts) == 1:
-            return [self.simplify_text(texts[0], context)]
+            result = self.simplify_text(texts[0], context)
+            _raise_if_llm_error(result)
+            return [result]
 
         sep = "\n\n<<<SEG>>>\n\n"
         joined = sep.join(texts)
@@ -509,6 +520,7 @@ class LLMService:
             {"role": "user", "content": f"请逐段简化以下{len(texts)}段内容：\n\n{joined}"}
         ]
         response = self.chat(messages, temperature=0.3, max_tokens=8192)
+        _raise_if_llm_error(response)
 
         parts = response.split(sep)
         while len(parts) < len(texts):

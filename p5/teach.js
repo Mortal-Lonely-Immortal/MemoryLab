@@ -380,10 +380,15 @@
         try {
           var p = await api('GET', '/documents/' + id + '/progress');
           if (note) note.textContent = '简化进度 ' + (p.simplified || 0) + '/' + (p.total || 0) + (p.status ? ' · ' + p.status : '');
-          if ((p.total > 0 && p.simplified >= p.total) || p.status === 'error') {
+          if (p.status === 'error') {
             clearInterval(poll);
-            if (note) note.textContent = p.status === 'error' ? '简化失败，请检查 API 配置' : '简化完成';
-            toast(p.status === 'error' ? '简化失败' : '简化完成', p.status === 'error' ? 'error' : 'success');
+            if (note) note.textContent = '简化失败：' + (p.error || '请检查 API Key');
+            toast('简化失败：' + (p.error || '请检查 API Key'), 'error');
+            await loadTeachDocs();
+          } else if (p.status === 'processed' || (p.total > 0 && p.simplified >= p.total)) {
+            clearInterval(poll);
+            if (note) note.textContent = '简化完成';
+            toast('简化完成', 'success');
             await loadTeachDocs();
           }
         } catch (e) { clearInterval(poll); if (note) note.textContent = '进度读取失败'; }

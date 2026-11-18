@@ -276,8 +276,17 @@ def _do_simplify(doc_id, block_ids=None):
 
             try:
                 results = llm.simplify_batch(texts)
-            except Exception:
-                results = texts  # 失败时保留原文
+            except Exception as exc:
+                # Never write an API error string into simplified_text and
+                # never pretend the document was simplified.
+                conn = get_db()
+                conn.execute('UPDATE documents SET status = ? WHERE id = ?', ('error', doc_id))
+                conn.commit()
+                conn.close()
+                session = _simplify_sessions.get(doc_id)
+                if session is not None:
+                    session['error'] = str(exc)
+                return
 
             # 确保结果数量匹配
             if len(results) != len(batch):
@@ -294,10 +303,13 @@ def _do_simplify(doc_id, block_ids=None):
             conn.close()
 
         conn = get_db()
-        conn.execute('UPDATE documents SET status = ? WHERE id = ?', ('processing', doc_id))
+        conn.execute('UPDATE documents SET status = ? WHERE id = ?', ('processed', doc_id))
         conn.commit()
         conn.close()
-    except Exception:
+        session = _simplify_sessions.get(doc_id)
+        if session is not None:
+            session['error'] = None
+    except Exception as exc:
         try:
             conn = get_db()
             conn.execute('UPDATE documents SET status = ? WHERE id = ?', ('error', doc_id))
@@ -305,6 +317,9 @@ def _do_simplify(doc_id, block_ids=None):
             conn.close()
         except Exception:
             pass
+        session = _simplify_sessions.get(doc_id)
+        if session is not None:
+            session['error'] = str(exc)
 
 
 @documents_bp.route('/<int:doc_id>/chapters', methods=['GET'])
@@ -393,6 +408,18 @@ def simplify_document(doc_id):
         conn.close()
         return jsonify({"error": "正在简化中，请等待"}), 409
 
+    # Older versions wrote API error strings into simplified_text. Clear them
+    # so a retry after fixing the key starts from real content again.
+    conn.execute(
+        """UPDATE document_blocks SET simplified_text = NULL
+           WHERE document_id = ? AND (
+             simplified_text LIKE 'API错误:%' OR simplified_text LIKE '请求失败:%'
+             OR simplified_text LIKE '请求超时%' OR simplified_text LIKE '请先在设置中配置API密钥%'
+             OR simplified_text = original_text
+           )""",
+        (doc_id,))
+    conn.commit()
+
     data = request.json or {}
     chapter_titles = data.get('chapter_titles')
     pages = data.get('pages')
@@ -437,7 +464,7 @@ def simplify_document(doc_id):
         target_count = conn.execute(
             "SELECT COUNT(*) FROM document_blocks WHERE document_id = ? AND block_type IN ('text','heading','slide_title') AND original_text IS NOT NULL AND original_text != '' AND (simplified_text IS NULL OR simplified_text = '')",
             (doc_id,)).fetchone()[0]
-    _simplify_sessions[doc_id] = {"target": target_count, "start_simplified": start_simplified}
+    _simplify_sessions[doc_id] = {"target": target_count, "start_simplified": start_simplified, "error": None}
 
     conn.execute('UPDATE documents SET status = ? WHERE id = ?', ('simplifying', doc_id))
     conn.commit()
@@ -479,7 +506,8 @@ def simplify_progress(doc_id):
     return jsonify({
         "total": total,
         "simplified": simplified,
-        "status": doc['status'] if doc else 'unknown'
+        "status": doc['status'] if doc else 'unknown',
+        "error": (session or {}).get('error')
     })
 
 

@@ -13,7 +13,7 @@
 到 GitHub 的 **Releases** 页面下载：
 
 ```text
-MemoryLab-Portable-1.0.6-win64.zip
+MemoryLab-Portable-1.0.7-win64.zip
 ```
 
 1. 解压到有写权限的目录（不要放 `Program Files`）；
