@@ -1,0 +1,468 @@
+/* Memory Lab — native P5 workspace backed by DeepTutor 1.7.3 */
+(function () {
+  'use strict';
+  var API = '/dt-api';
+  var state = { section: 'overview', content: null };
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmtDate(v) {
+    if (!v) return '';
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+  async function dtApi(path, opts) {
+    opts = opts || {};
+    var headers = opts.headers || {};
+    if (!(opts.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+    var r = await fetch(API + path, {
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.body
+    });
+    var text = await r.text();
+    var data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+    if (!r.ok) {
+      var msg = data && (data.detail || data.message || data.error) || ('HTTP ' + r.status);
+      if (typeof msg !== 'string') msg = JSON.stringify(msg);
+      throw new Error(msg);
+    }
+    return data;
+  }
+  function toast(msg, type) {
+    if (typeof showToast === 'function') showToast(msg, type || 'info');
+  }
+  function card(title, body) {
+    return '<div class="p5-card"><div class="p5-card-header">' + title + '</div>' + body + '</div>';
+  }
+  function empty(text) {
+    return '<div class="dt-empty">' + esc(text) + '</div>';
+  }
+  function status(ok, text) {
+    return '<div class="dt-status">' + (ok ? 'DEEPTUTOR CONNECTED' : 'DEEPTUTOR OFFLINE') + ' · ' + esc(text || '127.0.0.1:8001') + '</div>';
+  }
+
+  var TABS = [
+    ['overview', 'OVERVIEW 概览'],
+    ['tutor', 'TUTOR 导师'],
+    ['learning', 'LEARNING 学习'],
+    ['knowledge', 'KNOWLEDGE 知识库'],
+    ['notebook', 'NOTEBOOK 笔记'],
+    ['memory', 'MEMORY 记忆'],
+    ['calendar', 'CALENDAR 日历'],
+    ['tasks', 'TASKS 任务'],
+    ['partners', 'PARTNERS 伙伴'],
+    ['research', 'RESEARCH 研究'],
+    ['visualize', 'VISUALIZE 可视化']
+  ];
+
+  function render(main) {
+    state.content = null;
+    main.innerHTML =
+      '<div class="dt-shell">' +
+        '<div class="dt-hero">' +
+          '<div class="dt-kicker">DEEPTUTOR / LEARNING OPERATING SYSTEM</div>' +
+          '<div class="dt-title">DEEPTUTOR</div>' +
+          '<div class="dt-sub">Chat · Learning · Knowledge · Notebook · Memory · Calendar · Tasks · Partners · Research · Visualize<br>完整能力接入 Memory Lab 的 P5 工作台，不再使用独立页面。</div>' +
+          '<div class="dt-status">DEEPTUTOR CONNECTED · 127.0.0.1:8001</div>' +
+        '</div>' +
+        '<div class="dt-nav">' + TABS.map(function (t) {
+          return '<button class="dt-tab" data-dt="' + t[0] + '" onclick="DTWorkspace.go(\'' + t[0] + '\')">' + t[1] + '</button>';
+        }).join('') + '</div>' +
+        '<div class="dt-content" id="dt-content"></div>' +
+      '</div>';
+    go('overview');
+  }
+
+  function go(section) {
+    state.section = section;
+    var content = document.getElementById('dt-content');
+    if (!content) return;
+    state.content = content;
+    document.querySelectorAll('.dt-tab').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-dt') === section);
+    });
+    content.innerHTML = '<div class="p5-card"><div class="p5-card-header">LOADING 加载中</div></div>';
+    var fn = {
+      overview: overview, tutor: tutor, learning: learning, knowledge: knowledge,
+      notebook: notebook, memory: memory, calendar: calendar, tasks: tasks,
+      partners: partners, research: research, visualize: visualize
+    }[section];
+    Promise.resolve(fn ? fn(content) : null).catch(function (e) {
+      content.innerHTML = card('ERROR 错误', '<div class="error-state">' + esc(e.message) + '</div>');
+    });
+  }
+
+  async function overview(content) {
+    var results = await Promise.allSettled([
+      dtApi('/api/dashboard/learning-index'),
+      dtApi('/api/dashboard/recent'),
+      dtApi('/api/knowledge-bases'),
+      dtApi('/api/notebooks/statistics'),
+      dtApi('/api/task-board'),
+      dtApi('/api/memory/overview')
+    ]);
+    function val(i, fallback) { return results[i].status === 'fulfilled' ? results[i].value : fallback; }
+    var learn = val(0, { sources: {} }) || { sources: {} };
+    var recent = val(1, []) || [];
+    var kbs = val(2, []) || [];
+    var nbs = val(3, { total_notebooks: 0, total_records: 0 }) || {};
+    var tasks = val(4, { cards: [] }) || { cards: [] };
+    var mem = val(5, { docs: [] }) || { docs: [] };
+    var sourceCount = Object.keys(learn.sources || {}).reduce(function (n, k) { return n + ((learn.sources[k] || []).length || 0); }, 0);
+    var openTasks = (tasks.cards || []).filter(function (c) { return c.status !== 'done'; }).length;
+    var memEntries = (mem.docs || []).reduce(function (n, d) { return n + (d.entry_count || 0); }, 0);
+    content.innerHTML =
+      '<div class="dt-grid">' +
+        '<div class="dt-stat"><b>' + (kbs.length || 0) + '</b><span>KNOWLEDGE BASES 知识库</span></div>' +
+        '<div class="dt-stat"><b>' + (nbs.total_notebooks || 0) + '</b><span>NOTEBOOKS 笔记本</span></div>' +
+        '<div class="dt-stat"><b>' + sourceCount + '</b><span>LEARNING SOURCES 学习资料</span></div>' +
+        '<div class="dt-stat"><b>' + openTasks + '</b><span>OPEN TASKS 待办</span></div>' +
+      '</div>' +
+      card('WORKSPACES 功能入口',
+        '<div class="dt-features" style="padding:14px;">' +
+          feature('tutor', 'TUTOR 导师', '对话 · 推理 · 工具 · 学习上下文') +
+          feature('learning', 'LEARNING 学习', 'Mastery Path · Book · Reading') +
+          feature('knowledge', 'KNOWLEDGE 知识库', '上传资料 · RAG · 索引') +
+          feature('notebook', 'NOTEBOOK 笔记', '按主题收集 · 复习') +
+          feature('memory', 'MEMORY 记忆', 'L1 / L2 / L3 · 画像 · 偏好') +
+          feature('calendar', 'CALENDAR 日历', '学习计划 · 时间块') +
+          feature('tasks', 'TASKS 任务', '看板 · 进行中 · 已完成') +
+          feature('partners', 'PARTNERS 伙伴', '多智能体 · 协作') +
+          feature('research', 'RESEARCH 研究', '深搜 · 论文 · 证据') +
+          feature('visualize', 'VISUALIZE 可视化', '图表 · SVG · 解释') +
+        '</div>') +
+      '<div class="dt-two">' +
+        card('RECENT 最近', recent.length ? '<div class="dt-list" style="padding:6px 14px;">' + recent.slice(0, 7).map(function (r) {
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(r.title || r.capability || 'Untitled') + '</b><small>' + esc(r.type || r.capability) + ' · ' + fmtDate((r.timestamp || 0) * 1000) + '</small></div><span class="dt-pill">' + esc(r.capability || 'chat') + '</span></div>';
+        }).join('') + '</div>' : empty('还没有 DeepTutor 记录')) +
+        card('MEMORY 记忆状态', '<div class="dt-list" style="padding:6px 14px;">' + (mem.docs || []).slice(0, 7).map(function (d) {
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(d.layer + ' / ' + d.key) + '</b><small>' + (d.entry_count || 0) + ' entries · ' + (d.exists ? 'ready' : 'empty') + '</small></div><span class="dt-pill">' + esc(d.layer) + '</span></div>';
+        }).join('') + '</div>') +
+      '</div>' +
+      '<div class="dt-note">DeepTutor workspace: <code>data/deeptutor</code> · 与 Memory Lab 卡片/文档数据隔离，导入前不会改写现有数据。</div>';
+  }
+  function feature(key, name, sub) {
+    return '<button class="dt-feature" onclick="DTWorkspace.go(\'' + key + '\')"><b>' + name + '</b><small>' + sub + '</small></button>';
+  }
+
+  function tutor(content) {
+    if (!state.chat) state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '连接中…', mode: 'chat' };
+    content.innerHTML =
+      '<div class="p5-card">' +
+        '<div class="p5-card-header">DEEPTUTOR CHAT 导师' +
+          '<div class="dt-actions" style="margin-left:auto;"><button class="btn btn-sm" onclick="DTWorkspace.newChat()">NEW 新对话</button></div>' +
+        '</div>' +
+        '<div class="dt-chat-wrap" style="padding:12px 14px;">' +
+          '<div class="dt-chat-log" id="dt-chat-log"></div>' +
+          '<div class="dt-actions" id="dt-chat-modes" style="margin-bottom:2px;">' +
+            ['chat','explain','solve','research','visualize'].map(function (m) {
+              return '<button class="dt-tab' + (state.chat.mode === m ? ' is-active' : '') + '" data-dt-mode="' + m + '" onclick="DTWorkspace.setChatMode(\'' + m + '\')">' + m.toUpperCase() + '</button>';
+            }).join('') +
+          '</div>' +
+          '<div class="dt-chat-input"><input class="dt-input" id="dt-chat-text" placeholder="问课程、题目、文档，或让它制定学习路径…" autocomplete="off"><button class="btn btn-primary" id="dt-chat-send" onclick="DTWorkspace.sendChat()">SEND 发送</button></div>' +
+          '<div class="dt-note" id="dt-chat-status">' + esc(state.chat.status) + '</div>' +
+        '</div>' +
+      '</div>';
+    var input = document.getElementById('dt-chat-text');
+    if (input) input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
+    paintChat();
+    connectChat();
+  }
+
+  function paintChat() {
+    var log = document.getElementById('dt-chat-log');
+    if (!log || !state.chat) return;
+    if (!state.chat.messages.length) {
+      log.innerHTML = '<div class="dt-empty">DEEPTUTOR CHAT · 支持课程解释、题目求解、学习路径、知识库引用。<br>当前会话由 DeepTutor 记忆与工具驱动。</div>';
+      return;
+    }
+    log.innerHTML = state.chat.messages.map(function (m) {
+      return '<div class="dt-msg ' + (m.role === 'user' ? 'user' : (m.role === 'sys' ? 'sys' : '')) + '">' + esc(m.text) + '</div>';
+    }).join('');
+    log.scrollTop = log.scrollHeight;
+  }
+  function setChatStatus(text) {
+    if (!state.chat) return;
+    state.chat.status = text || '';
+    var el = document.getElementById('dt-chat-status');
+    if (el) el.textContent = text || '';
+  }
+  function connectChat() {
+    if (!state.chat) return;
+    if (state.chat.socket && state.chat.socket.readyState <= 1) return;
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var ws = new WebSocket(proto + location.host + '/dt-ws');
+    state.chat.socket = ws;
+    ws.onopen = function () { setChatStatus('已连接 DeepTutor · ' + (state.chat.sessionId || '新会话')); };
+    ws.onclose = function () { setChatStatus('连接已断开，发送消息会重连'); };
+    ws.onerror = function () { setChatStatus('无法连接 DeepTutor 服务'); };
+    ws.onmessage = function (ev) {
+      var d;
+      try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d.session_id && !state.chat.sessionId) state.chat.sessionId = d.session_id;
+      if (d.type === 'session') { if (d.session_id) state.chat.sessionId = d.session_id; setChatStatus('会话 ' + d.session_id); return; }
+      if (d.type === 'content' && d.content) {
+        var last = state.chat.messages[state.chat.messages.length - 1];
+        if (!last || last.role !== 'assistant') { state.chat.messages.push({ role: 'assistant', text: d.content }); }
+        else last.text += d.content;
+        paintChat(); return;
+      }
+      if (d.type === 'progress') { if (d.content) setChatStatus(d.content); return; }
+      if (d.type === 'stage_start') { setChatStatus((d.source || 'DeepTutor') + ' · ' + (d.stage || '处理中')); return; }
+      if (d.type === 'result' && d.content) {
+        var la = state.chat.messages[state.chat.messages.length - 1];
+        if (!la || la.role !== 'assistant') state.chat.messages.push({ role: 'assistant', text: d.content });
+        else if (la.text.indexOf(d.content) < 0) la.text += d.content;
+        paintChat(); return;
+      }
+      if (d.type === 'error') {
+        state.chat.busy = false;
+        state.chat.messages.push({ role: 'sys', text: 'ERROR: ' + (d.content || 'DeepTutor 请求失败') });
+        setChatStatus('请求失败'); paintChat(); return;
+      }
+      if (d.type === 'done' || (d.metadata && d.metadata.turn_terminal)) {
+        state.chat.busy = false; setChatStatus('就绪'); paintChat();
+      }
+    };
+  }
+  function sendChat() {
+    if (!state.chat || state.chat.busy) return;
+    var input = document.getElementById('dt-chat-text');
+    var text = input ? input.value.trim() : '';
+    if (!text) return;
+    input.value = '';
+    state.chat.messages.push({ role: 'user', text: text });
+    state.chat.busy = true;
+    setChatStatus('DeepTutor 思考中…');
+    paintChat();
+    connectChat();
+    var send = function () {
+      if (!state.chat.socket || state.chat.socket.readyState !== 1) { setChatStatus('正在连接…'); setTimeout(send, 500); return; }
+      state.chat.socket.send(JSON.stringify({
+        type: 'start_turn', protocol_version: '2.0', content: text, capability: state.chat.mode || 'chat',
+        session_id: state.chat.sessionId || null, language: 'Chinese', capability: state.chat.mode || 'chat'
+      }));
+    };
+    send();
+  }
+  function setChatMode(mode) {
+    if (!state.chat) state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '', mode: 'chat' };
+    state.chat.mode = mode || 'chat';
+    document.querySelectorAll('#dt-chat-modes [data-dt-mode]').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-dt-mode') === state.chat.mode);
+    });
+    var input = document.getElementById('dt-chat-text');
+    if (input) input.placeholder = state.chat.mode === 'research' ? '输入研究问题、论文主题或需要核实的观点…' : state.chat.mode === 'visualize' ? '描述要生成的图表、关系图或可视化…' : state.chat.mode === 'solve' ? '输入题目，DeepTutor 会展示推理与步骤…' : state.chat.mode === 'explain' ? '输入概念，让导师拆解…' : '问课程、题目、文档，或让它制定学习路径…';
+  }
+  function openChatMode(mode) {
+    go('tutor');
+    setTimeout(function () { setChatMode(mode); }, 120);
+  }
+  function newChat() {
+    if (state.chat && state.chat.socket) { try { state.chat.socket.close(); } catch (e) {} }
+    state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '新会话' };
+    var content = document.getElementById('dt-content');
+    if (content) tutor(content);
+  }
+
+  async function learning(content) {
+    var res = await Promise.allSettled([
+      dtApi('/api/mastery-paths/topics'),
+      dtApi('/api/books'),
+      dtApi('/api/reading/workspaces')
+    ]);
+    var topics = (res[0].status === 'fulfilled' && res[0].value.topics) || [];
+    var books = (res[1].status === 'fulfilled' && res[1].value.books) || [];
+    var readings = (res[2].status === 'fulfilled' && res[2].value.workspaces) || [];
+    content.innerHTML = '<div class="dt-two">' +
+      card('MASTERY PATH 掌握路径', topics.length ? '<div class="dt-list" style="padding:6px 14px;">' + topics.map(function (t) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(t.title || t.name || t.topic) + '</b><small>' + esc(t.status || t.progress || '') + '</small></div><span class="dt-pill">PATH</span></div>';
+      }).join('') + '</div>' : empty('还没有掌握路径')) +
+      card('BOOKS 书', books.length ? '<div class="dt-list" style="padding:6px 14px;">' + books.map(function (b) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(b.title || b.name) + '</b><small>' + esc(b.status || '') + '</small></div><span class="dt-pill">BOOK</span></div>';
+      }).join('') + '</div>' : empty('还没有学习书')) +
+      '</div>' +
+      card('READING 阅读', readings.length ? '<div class="dt-list" style="padding:6px 14px;">' + readings.map(function (w) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(w.title || w.name) + '</b><small>' + esc(w.status || '') + '</small></div><span class="dt-pill">READING</span></div>';
+      }).join('') + '</div>' : empty('还没有阅读工作区')) +
+      '<div class="dt-note">Mastery Path、Book、Reading 的创建与学习流程在 DeepTutor 后端继续可用；当前先把列表与状态接入 P5，创建流程下一步补齐。</div>';
+  }
+
+  async function knowledge(content) {
+    var kbs = await dtApi('/api/knowledge-bases');
+    kbs = Array.isArray(kbs) ? kbs : [];
+    content.innerHTML = card('KNOWLEDGE BASES 知识库',
+      '<div style="padding:12px 14px;">' +
+        '<div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newKb()">NEW KB 新建知识库</button><button class="btn btn-sm" onclick="DTWorkspace.go(\'knowledge\')">REFRESH 刷新</button></div>' +
+        (kbs.length ? '<div class="dt-list" style="margin-top:10px;">' + kbs.map(function (k) {
+          var name = k.name || k.kb_name || k.id;
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(name) + '</b><small>' + ((k.statistics && (k.statistics.raw_documents || k.statistics.raw_documents === 0)) ? k.statistics.raw_documents : (k.file_count || 0)) + ' files · ' + esc((k.statistics && k.statistics.rag_provider) || 'default') + '</small></div>' +
+            '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.uploadKb(\'' + esc(name) + '\')">UPLOAD</button><button class="btn btn-sm btn-danger" onclick="DTWorkspace.deleteKb(\'' + esc(name) + '\')">DEL</button></div></div>';
+        }).join('') + '</div>' : empty('还没有知识库。上传 PDF/Word/PPT 后可在导师中引用。')) +
+      '</div>');
+  }
+  function modal(title, sub, body) {
+    var old = document.getElementById('dt-modal-mask');
+    if (old) old.remove();
+    var el = document.createElement('div');
+    el.id = 'dt-modal-mask';
+    el.className = 'dt-modal-mask';
+    el.innerHTML = '<div class="dt-modal"><h3>' + esc(title) + '</h3><p>' + esc(sub || '') + '</p>' + body + '</div>';
+    el.addEventListener('click', function (e) { if (e.target === el) el.remove(); });
+    document.body.appendChild(el);
+    return el;
+  }
+  function closeModal() { var el = document.getElementById('dt-modal-mask'); if (el) el.remove(); }
+
+  function newKb() {
+    var el = modal('NEW KNOWLEDGE BASE', '创建后上传资料；RAG 索引需要 embedding 配置。',
+      '<div class="dt-form"><input class="dt-input" id="dt-kb-name" placeholder="Knowledge base name"><textarea class="dt-textarea" id="dt-kb-desc" rows="3" placeholder="Description (optional)"></textarea>' +
+      '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createKb()">CREATE 创建</button></div></div>');
+  }
+  async function createKb() {
+    var name = (document.getElementById('dt-kb-name') || {}).value || '';
+    if (!name.trim()) { toast('请输入知识库名称', 'error'); return; }
+    var fd = new FormData();
+    fd.append('name', name.trim());
+    try {
+      await dtApi('/api/knowledge-bases', { method: 'POST', body: fd });
+      closeModal(); toast('知识库已创建', 'success'); go('knowledge');
+    } catch (e) { toast('创建失败：' + e.message, 'error'); }
+  }
+  function uploadKb(name) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '.pdf,.docx,.doc,.pptx,.ppt,.md,.txt';
+    input.onchange = async function () {
+      if (!input.files.length) return;
+      var fd = new FormData();
+      for (var i = 0; i < input.files.length; i++) fd.append('files', input.files[i]);
+      try {
+        toast('正在上传 ' + input.files.length + ' 个文件…', 'info');
+        await dtApi('/api/knowledge-bases/' + encodeURIComponent(name) + '/upload', { method: 'POST', body: fd });
+        toast('已上传，等待索引', 'success'); go('knowledge');
+      } catch (e) { toast('上传失败：' + e.message, 'error'); }
+    };
+    input.click();
+  }
+  async function deleteKb(name) {
+    if (!confirm('删除知识库 ' + name + '？')) return;
+    try { await dtApi('/api/knowledge-bases/' + encodeURIComponent(name), { method: 'DELETE' }); toast('已删除', 'success'); go('knowledge'); }
+    catch (e) { toast('删除失败：' + e.message, 'error'); }
+  }
+
+  async function notebook(content) {
+    var data = await dtApi('/api/notebooks');
+    var list = (data && data.notebooks) || [];
+    content.innerHTML = card('NOTEBOOKS 笔记本',
+      '<div style="padding:12px 14px;"><div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newNotebook()">NEW NOTEBOOK 新建</button><button class="btn btn-sm" onclick="DTWorkspace.go(\'notebook\')">REFRESH 刷新</button></div>' +
+      (list.length ? '<div class="dt-list" style="margin-top:10px;">' + list.map(function (n) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(n.name) + '</b><small>' + (n.record_count || 0) + ' records · ' + esc(n.description || '') + '</small></div><button class="btn btn-sm" onclick="DTWorkspace.openNotebook(' + n.id + ')">OPEN 打开</button></div>';
+      }).join('') + '</div>' : empty('还没有笔记本。把导师回答、题目和研究记录收进来。')) + '</div>');
+  }
+  function newNotebook() {
+    modal('NEW NOTEBOOK', '为这门课建立一个收集主题。',
+      '<div class="dt-form"><input class="dt-input" id="dt-nb-name" placeholder="Notebook name"><textarea class="dt-textarea" id="dt-nb-desc" rows="3" placeholder="Description (optional)"></textarea>' +
+      '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createNotebook()">CREATE 创建</button></div></div>');
+  }
+  async function createNotebook() {
+    var name = (document.getElementById('dt-nb-name') || {}).value || '';
+    var desc = (document.getElementById('dt-nb-desc') || {}).value || '';
+    if (!name.trim()) { toast('请输入名称', 'error'); return; }
+    try { await dtApi('/api/notebooks', { method: 'POST', body: JSON.stringify({ name: name.trim(), description: desc.trim(), color: '#e60012', icon: 'book' }) }); closeModal(); toast('笔记本已创建', 'success'); go('notebook'); }
+    catch (e) { toast('创建失败：' + e.message, 'error'); }
+  }
+  async function openNotebook(id) {
+    try {
+      var n = await dtApi('/api/notebooks/' + id);
+      var recs = n.records || n.items || [];
+      modal(n.name || 'NOTEBOOK', (recs.length || 0) + ' records',
+        (recs.length ? '<div class="dt-list">' + recs.map(function (r) {
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(r.title || r.summary || r.content || 'Record') + '</b><small>' + esc(r.record_type || r.type || '') + ' · ' + fmtDate(r.created_at) + '</small></div></div>';
+        }).join('') + '</div>' : '<div class="dt-empty">还没有记录</div>') +
+        '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>');
+    } catch (e) { toast('读取失败：' + e.message, 'error'); }
+  }
+
+  async function memory(content) {
+    var data = await dtApi('/api/memory/overview');
+    var docs = data.docs || [];
+    content.innerHTML = card('MEMORY 记忆',
+      '<div style="padding:12px 14px;" class="dt-list">' + (docs.length ? docs.map(function (d) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(d.layer + ' / ' + d.key) + '</b><small>' + (d.entry_count || 0) + ' entries · ' + (d.exists ? 'ready' : 'empty') + ' · ' + fmtDate(d.updated_at) + '</small></div><span class="dt-pill">' + esc(d.layer) + '</span></div>';
+      }).join('') : empty('记忆还是空的。和导师多聊几轮后自动沉淀。')) + '</div>') +
+      '<div class="dt-note">L1 事实 / L2 学习状态 / L3 画像与偏好 · 由 DeepTutor 自动维护。</div>';
+  }
+
+  async function calendar(content) {
+    var data = await dtApi('/api/calendar/calendars');
+    var cals = (data && data.calendars) || [];
+    content.innerHTML = card('CALENDAR 日历',
+      '<div style="padding:12px 14px;" class="dt-list">' + cals.map(function (c) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(c.name || 'Study calendar') + '</b><small>' + esc(c.id) + ' · ' + (c.visible ? 'visible' : 'hidden') + '</small></div><span class="dt-pill" style="border-color:' + esc(c.color || '#e60012') + '">CAL</span></div>';
+      }).join('') + '</div>' +
+      '<div class="dt-note">日历与 DeepTutor 的学习计划、Mastery review、任务块共享。</div>');
+  }
+
+  async function tasks(content) {
+    var data = await dtApi('/api/task-board');
+    var cards = data.cards || [];
+    var groups = { todo: [], doing: [], done: [] };
+    cards.forEach(function (c) { (groups[c.status] || groups.todo).push(c); });
+    content.innerHTML = '<div class="dt-grid" style="grid-template-columns:repeat(3,1fr);">' +
+      ['todo', 'doing', 'done'].map(function (st) {
+        return '<div class="p5-card"><div class="p5-card-header">' + st.toUpperCase() + ' · ' + groups[st].length + '</div><div style="padding:8px 12px;min-height:160px;">' +
+          (groups[st].length ? groups[st].map(function (c) {
+            return '<div class="dt-feature" style="margin-bottom:7px;border-left-color:' + esc((data.colors || {})[st] || '#e60012') + '"><b>' + esc(c.title || c.text || 'Task') + '</b><small>' + esc(c.description || '') + '</small></div>';
+          }).join('') : '<div class="dt-empty">EMPTY</div>') + '</div></div>';
+      }).join('') + '</div>' +
+      '<div class="dt-note">任务看板来自 DeepTutor Task Board；新建卡片与拖拽下一步接入。</div>';
+  }
+
+  async function partners(content) {
+    var data = await dtApi('/api/partners');
+    var list = Array.isArray(data) ? data : (data.partners || []);
+    content.innerHTML = card('PARTNERS 伙伴',
+      '<div style="padding:12px 14px;" class="dt-list">' + (list.length ? list.map(function (p) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(p.name || p.display_name || 'Partner') + '</b><small>' + esc(p.description || p.persona || '') + '</small></div><span class="dt-pill">' + esc(p.type || 'AGENT') + '</span></div>';
+      }).join('') : empty('还没有配置伙伴。DeepTutor 的 Partners 可在设置中创建。')) + '</div>');
+  }
+
+  async function research(content) {
+    var data = await dtApi('/api/dashboard/recent');
+    var list = (data || []).filter(function (r) { return /research|solve|explore/i.test(String(r.capability || r.type || '')); });
+    content.innerHTML = card('RESEARCH 研究',
+      '<div style="padding:12px 14px;">' +
+        '<div class="dt-note">从导师发起深搜、论文检索、证据整理。结果会进入最近记录与笔记。</div>' +
+        '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.go(\'tutor\')">ASK IN TUTOR 在导师中开始</button></div>' +
+        (list.length ? '<div class="dt-list" style="margin-top:10px;">' + list.map(function (r) {
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(r.title || 'Research') + '</b><small>' + fmtDate((r.timestamp || 0) * 1000) + '</small></div><span class="dt-pill">RESEARCH</span></div>';
+        }).join('') + '</div>' : empty('还没有研究记录')) + '</div>');
+  }
+
+  async function visualize(content) {
+    var data = await dtApi('/api/dashboard/recent');
+    var list = (data || []).filter(function (r) { return /visual|chart|diagram/i.test(String(r.capability || r.type || '')); });
+    content.innerHTML = card('VISUALIZE 可视化',
+      '<div style="padding:12px 14px;">' +
+        '<div class="dt-note">用导师生成图表、SVG、关系图和解释；结果可保存进笔记。</div>' +
+        '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.go(\'tutor\')">CREATE IN TUTOR 在导师中生成</button></div>' +
+        (list.length ? '<div class="dt-list" style="margin-top:10px;">' + list.map(function (r) {
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(r.title || 'Visualization') + '</b><small>' + fmtDate((r.timestamp || 0) * 1000) + '</small></div><span class="dt-pill">VISUAL</span></div>';
+        }).join('') + '</div>' : empty('还没有可视化记录')) + '</div>');
+  }
+
+  window.DTWorkspace = {
+    render: render, go: go, renderTutor: tutor, closeModal: closeModal,
+    newKb: newKb, createKb: createKb, uploadKb: uploadKb, deleteKb: deleteKb,
+    newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
+    sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode
+  };
+})();

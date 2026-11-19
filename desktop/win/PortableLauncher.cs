@@ -43,6 +43,7 @@ namespace MemoryLabPortable
         private const string Url = "http://127.0.0.1:18080/";
         private const string BackendHealth = "http://127.0.0.1:18081/api/v1/settings";
         private const string DocsHealth = "http://127.0.0.1:15000/api/health";
+        private const string DeepTutorHealth = "http://127.0.0.1:3782/";
 
         private readonly string baseDir;
         private readonly Label status;
@@ -55,9 +56,11 @@ namespace MemoryLabPortable
         private Process backend;
         private Process docs;
         private Process nginx;
+        private Process deepTutor;
         private bool ownBackend;
         private bool ownDocs;
         private bool ownNginx;
+        private bool ownDeepTutor;
         private bool closing;
 
         public PortableForm()
@@ -239,6 +242,9 @@ namespace MemoryLabPortable
             bool needBackend = !Up(BackendHealth);
             bool needDocs = !Up(DocsHealth);
             bool needNginx = !Up(Url);
+            string deepTutorDir = Path.Combine(baseDir, "deep-tutor");
+            string deepTutorExe = Path.Combine(deepTutorDir, ".venv", "Scripts", "deeptutor.exe");
+            bool needDeepTutor = !Up(DeepTutorHealth) && File.Exists(deepTutorExe);
 
             if (needBackend)
             {
@@ -276,9 +282,23 @@ namespace MemoryLabPortable
                 ownNginx = true;
             }
 
+            if (needDeepTutor)
+            {
+                string nodeDir = Path.Combine(deepTutorDir, "node");
+                string path = Environment.GetEnvironmentVariable("PATH") ?? "";
+                if (Directory.Exists(nodeDir)) path = nodeDir + ";" + path;
+                string deepTutorScript = Path.Combine(deepTutorDir, "start-deeptutor.cmd");
+                deepTutor = StartProcess("cmd.exe",
+                    "/c \"" + deepTutorScript + "\"",
+                    deepTutorDir,
+                    new string[,] { { "DEEPTUTOR_HOME", Path.Combine(baseDir, "data", "deeptutor") }, { "PATH", path } });
+                ownDeepTutor = true;
+            }
+
             if (needBackend && !WaitFor(BackendHealth, 120000)) throw new Exception("后端没有在 120 秒内启动，请查看 data\\db 读写权限。");
             if (needDocs && !WaitFor(DocsHealth, 90000)) throw new Exception("文档服务没有在 90 秒内启动。");
             if (needNginx && !WaitFor(Url, 30000)) throw new Exception("网页服务没有在 30 秒内启动。");
+            if (needDeepTutor && !WaitFor(DeepTutorHealth, 90000)) Log("DeepTutor not ready; tab will retry");
         }
 
         private Process StartProcess(string file, string args, string workDir, string[,] env)
@@ -407,9 +427,23 @@ namespace MemoryLabPortable
                 }
             }
             catch { }
+            if (ownDeepTutor)
+            {
+                try
+                {
+                    ProcessStartInfo info = new ProcessStartInfo("cmd.exe",
+                        "/c \"" + Path.Combine(baseDir, "deep-tutor", "stop-deeptutor.cmd") + "\"");
+                    info.WorkingDirectory = Path.Combine(baseDir, "deep-tutor");
+                    info.UseShellExecute = false;
+                    info.CreateNoWindow = true;
+                    using (Process p = Process.Start(info)) { if (p != null) p.WaitForExit(8000); }
+                }
+                catch { }
+                Kill(deepTutor);
+            }
             if (ownDocs) Kill(docs);
             if (ownBackend && backend != null && !backend.HasExited) Kill(backend);
-            ownNginx = ownDocs = ownBackend = false;
+            ownNginx = ownDocs = ownBackend = ownDeepTutor = false;
         }
 
         private static void Kill(Process p)

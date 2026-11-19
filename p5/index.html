@@ -973,6 +973,17 @@ body { background: var(--bg); }
 .card-row { background: var(--panel-soft, #112021); }
 .card-row:hover { border-left-color: var(--cyan); }
 
+/* ===== full DeepTutor workspace ===== */
+.deeptutor-shell { display:flex; flex-direction:column; gap:10px; height:calc(100vh - 190px); min-height:620px; }
+.deeptutor-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.deeptutor-head .deeptutor-title { font-family:var(--font-display); font-size:24px; font-style:italic; letter-spacing:1px; color:var(--text); }
+.deeptutor-head .deeptutor-sub { font-family:var(--font-mono); font-size:9px; letter-spacing:1.2px; color:var(--text-dim); }
+.deeptutor-head .deeptutor-actions { margin-left:auto; display:flex; gap:8px; }
+.deeptutor-frame-wrap { position:relative; flex:1; min-height:0; border:2px solid var(--border); background:#0b1112; box-shadow:8px 8px 0 rgba(0,0,0,.28); overflow:hidden; }
+html[data-theme="white"] .deeptutor-frame-wrap { background:#fff; box-shadow:8px 8px 0 #cfeaf6; }
+.deeptutor-frame { width:100%; height:100%; min-height:0; border:0; display:block; background:#fff; }
+.deeptutor-note { font-family:var(--font-mono); font-size:9px; color:var(--text-dim); line-height:1.7; }
+.deeptutor-note code { color:var(--accent); }
 /* ===== tutor floating window ===== */
 .tutor-bubble {
   position: fixed; right: 20px; bottom: 20px; z-index: 60;
@@ -2419,6 +2430,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 </style>
 <link rel="stylesheet" href="teach.css">
 <link rel="stylesheet" href="archive3d.css?v=8">
+<link rel="stylesheet" href="deeptutor.css?v=1">
 <link rel="modulepreload" href="./archive3d.bundle.js?v=24">
 </head>
 <body>
@@ -2471,6 +2483,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
   <div class="nav-tab" data-page="documents"><span>DOCS 文档</span></div>
   <div class="nav-tab" data-page="teach"><span>TEACH 教学</span></div>
   <div class="nav-tab" data-page="tutor"><span>TUTOR 导师</span></div>
+<div class="nav-tab" data-page="deeptutor"><span>DEEPTUTOR 全科</span></div>
   <div class="nav-tab" data-page="cards"><span>CARDS 卡片</span></div>
   <div class="nav-tab" data-page="stats"><span>STATS 统计</span></div>
   <div class="nav-tab" data-page="method"><span>LAB 方法</span></div>
@@ -2484,6 +2497,7 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 
 <script src="/vendor/echarts.min.js"></script>
 <script src="teach.js"></script>
+<script src="deeptutor.js?v=1"></script>
 <script>
 /* ================================================================
  * DeepTutor — P5 Pentagram UI (r/R=0.45饱满比例, 3层结构)
@@ -2671,6 +2685,7 @@ function loadPage(page) {
       switch (page) {
         case 'review': await renderReview(main); break;
         case 'tutor': await renderTutor(main); break;
+    case 'deeptutor': renderDeepTutor(main); break;
         case 'documents': await renderDocuments(main); break;
         case 'teach': await renderTeach(main); break;
         case 'cards': await renderCards(main); break;
@@ -2690,7 +2705,13 @@ function loadPage(page) {
 // ================================================================
 // 1. AI Tutor
 // ================================================================
+function renderDeepTutor(main) {
+  if (window.DTWorkspace) { window.DTWorkspace.render(main); return; }
+  main.innerHTML = '<div class="p5-card"><div class="p5-card-header">DEEPTUTOR</div><div class="error-state">DeepTutor 工作台脚本未加载</div></div>';
+}
+
 async function renderTutor(main) {
+  if (window.DTWorkspace && window.DTWorkspace.renderTutor) { window.DTWorkspace.renderTutor(main); return; }
   var history = await api('GET', '/tutor/history?user_id=' + userId);
   main.innerHTML =
     renderWeatherBoardHTML() +

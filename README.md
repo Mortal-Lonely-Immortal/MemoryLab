@@ -119,6 +119,12 @@ Docker 开发版：
 
 两套主题共用同一套页面和功能。
 
+## DeepTutor 全功能工作台
+- 顶栏 `DEEPTUTOR 全科` 内嵌完整 DeepTutor v1.7.3（Chat / Learning / Knowledge / Book / Reading / Notebook / Memory / Calendar / Task Board / Partners / Research / Visualize 等）。
+- 本地服务地址 `http://127.0.0.1:3782`，后端 `http://127.0.0.1:8001`；启动器会随 Memory Lab 自动拉起。
+- DeepTutor 使用独立工作区 `data/deeptutor`，不会修改 Memory Lab 的 1146 张卡、文档库和教程。
+- 模型配置来自 DeepTutor 自己的 Settings；Memory Lab 的卡片/文档数据不会自动导入，避免误覆盖。
+
 ## 文档 → 图文教程
 - 文档页每份已提取课件都有 `TUTORIAL 图文`：把 `document_blocks` 里的文字和图片按原始顺序重组成 **DOCX + 独立 HTML**。
 - 输出到 `data/docs/tutorials/doc_<id>/`，其中 `_图文教程.docx` 内的图片已嵌入，`images/` 保留原图。
@@ -225,3 +231,8 @@ memory-app/
 代码 MIT，见 [LICENSE](LICENSE)。第三方组件与视觉素材见 [NOTICE](NOTICE)。
 
 Persona 5 / Persona 3 © ATLUS / SEGA。本项目是非商业 fan project，与 ATLUS/SEGA 无关联。
+## DeepTutor 原生 P5 工作台
+- 顶栏 `DEEPTUTOR 全科` 不嵌入 iframe，使用 Memory Lab 自己的 P5 页面：Overview / Tutor / Learning / Knowledge / Notebook / Memory / Calendar / Tasks / Partners / Research / Visualize。
+- Tutor 直接使用 DeepTutor WebSocket（`/dt-ws`），支持 Chat / Explain / Solve / Research / Visualize 模式。
+- Knowledge、Notebook 使用 DeepTutor HTTP API，经本地 Nginx `/dt-api/` 转发。
+- DeepTutor 使用独立 `data/deeptutor` 工作区；不会改写 Memory Lab 的 1146 张卡与文档。
