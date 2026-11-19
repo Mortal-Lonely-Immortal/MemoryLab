@@ -2498,7 +2498,7 @@ html[data-theme="white"] .main { padding-top: 112px; }
   <div class="nav-tab" data-page="method"><span>LAB 方法</span></div>
   <div class="nav-tab" data-page="settings"><span>CONFIG 设置</span></div>
   <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="切换白色 P3 / 黑色 P5">WHITE 白</button>
-  <div class="nav-ver">P5<b>·</b>FSRS</div>
+  <div class="nav-ver">P5<b>·</b>V1.0.12</div>
   <div class="nav-deep-group">
     <div class="nav-tab" data-page="dt-overview"><span>OVERVIEW 概览</span></div>
     <div class="nav-tab" data-page="dt-tutor"><span>TUTOR 导师</span></div>
@@ -4473,7 +4473,7 @@ function applyTheme(theme, persist) {
   }
   document.title = theme === 'white' ? '记忆实验室 · P3' : '记忆实验室 · P5';
   var ver = document.querySelector('.nav-ver');
-  if (ver) ver.innerHTML = theme === 'white' ? 'P3<b>·</b>FSRS' : 'P5<b>·</b>FSRS';
+  if (ver) ver.innerHTML = theme === 'white' ? 'P3<b>·</b>V1.0.12' : 'P5<b>·</b>V1.0.12';
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = theme === 'white' ? '#eef5f9' : '#0d1718';
   if (document.getElementById('persona-chart') && typeof initPersona === 'function') initPersona();
