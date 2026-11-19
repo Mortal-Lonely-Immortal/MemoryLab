@@ -3323,12 +3323,13 @@ async function renderSettings(main) {
         '<div class="calling-card-embed" id="about-calling-card"></div>' +
         '<button class="btn btn-sm" style="margin-top:10px;" onclick="replayP3Intro()">REPLAY INTRO 重播开场</button>' +
       '</div></div>' +
-      '<div class="settings-col"><div class="p5-card"><div class="p5-card-header">API CONFIG 接口配置</div>' +
+      '<div class="settings-col"><div class="p5-card"><div class="p5-card-header">ONE API KEY 统一模型</div>' +
         '<div style="display:grid;gap:12px;">' +
           '<div><label style="font-size:11px;color:var(--text-dim);letter-spacing:1px;">API KEY 密钥</label><input id="cfg-api-key" value="" placeholder="' + (cfg.api_key ? '已配置，留空不修改' : 'sk-...') + '"></div>' +
           '<div><label style="font-size:11px;color:var(--text-dim);letter-spacing:1px;">BASE URL 接口地址</label><input id="cfg-api-base" value="' + (cfg.api_base||'') + '" placeholder="https://api.openai.com/v1"></div>' +
           '<div><label style="font-size:11px;color:var(--text-dim);letter-spacing:1px;">MODEL 模型</label><input id="cfg-model" value="' + (cfg.model||'') + '" placeholder="gpt-3.5-turbo"></div>' +
-          '<button class="btn btn-primary" onclick="saveConfig()" style="margin-top:8px;">SAVE CONFIG 保存配置</button>' +
+          '<p class="settings-note" style="margin:0;">一个 Key 同时保存到 Tutor、教材简化、DeepTutor 全科；模型需支持 OpenAI Chat Completions。</p>' +
+          '<button class="btn btn-primary" onclick="saveConfig()" style="margin-top:8px;">SAVE TO ALL 保存并同步</button>' +
         '</div>' +
       '</div></div></div>' +
       '<div class="p5-card" style="margin-top:14px;"><div class="p5-card-header">DEEPTUTOR MODEL 全科模型</div>' +
@@ -3351,8 +3352,41 @@ async function saveReviewSettings() {
   } catch (e) { showToast(e.message, 'error'); }
 }
 async function saveConfig() {
-  await api('POST', '/tutor/config', { api_key:$('#cfg-api-key')?.value||'', api_base:$('#cfg-api-base')?.value||'', model:$('#cfg-model')?.value||'' });
-  showToast('Config saved 配置已保存', 'success');
+  var key = $('#cfg-api-key')?.value || '';
+  var base = $('#cfg-api-base')?.value || '';
+  var model = $('#cfg-model')?.value || '';
+  try {
+    await api('POST', '/tutor/config', { api_key: key, api_base: base, model: model });
+    // One key, two engines: mirror the same provider into DeepTutor.
+    try {
+      var st = await (await fetch('/dt-api/api/settings')).json();
+      var llm = (((st.catalog || {}).services || {}).llm) || {};
+      var old = (llm.profiles || []).filter(function (p) { return p.id === llm.active_profile_id; })[0] || (llm.profiles || [])[0] || {};
+      var oldModel = ((old.models || [])[0]) || {};
+      var profile = {
+        id: old.id || 'llm-profile-custom',
+        name: old.name || 'Memory Lab',
+        binding: old.binding || 'custom',
+        base_url: base || old.base_url || '',
+        api_version: old.api_version || '',
+        extra_headers: old.extra_headers || {},
+        models: [{ id: oldModel.id || 'llm-model-custom', name: model || oldModel.model || oldModel.name || '', model: model || oldModel.model || oldModel.name || '' }],
+        api_format: old.api_format || 'openai_chat',
+        wire_api: old.wire_api || 'chat_completions'
+      };
+      if (key) profile.api_key = key;
+      var resp = await fetch('/dt-api/api/settings/apply/provider', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ service: 'llm', profile: profile, active_model_id: profile.models[0].id, activate: true })
+      });
+      if (!resp.ok) throw new Error('DeepTutor ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
+      showToast('已同步：Tutor / 教材 / DeepTutor', 'success');
+    } catch (e2) {
+      showToast('Memory Lab 已保存；DeepTutor 同步失败：' + e2.message, 'error');
+    }
+  } catch (e) {
+    showToast('保存失败：' + e.message, 'error');
+  }
 }
 
 
