@@ -762,12 +762,24 @@
         binding: old.binding || 'custom',
         base_url: base.trim(),
         api_version: old.api_version || '',
-        extra_headers: old.extra_headers || {},
+        extra_headers: (function () {
+          var h = Object.assign({}, old.extra_headers || {});
+          if (base.trim().indexOf('opencode.ai') >= 0 && !h['x-opencode-session']) {
+            var sid = localStorage.getItem('memoryLabOpencodeSession');
+            if (!sid) {
+              var bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+              sid = 'ses_' + Array.prototype.map.call(bytes, function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+              localStorage.setItem('memoryLabOpencodeSession', sid);
+            }
+            h['x-opencode-session'] = sid;
+          }
+          return h;
+        })(),
         models: [{ id: (st.model && st.model.id) || 'llm-model-custom', name: model.trim(), model: model.trim() }],
         api_format: fmt,
         wire_api: old.wire_api || 'chat_completions'
       };
-      if (key.trim()) profile.api_key = key.trim();
+      profile.api_key = key.trim() || '***';
       await dtApi('/api/settings/apply/provider', { method: 'POST', body: JSON.stringify({ service: 'llm', profile: profile, active_model_id: profile.models[0].id, activate: true }) });
       closeModal();
       toast('DeepTutor 模型配置已保存', 'success');

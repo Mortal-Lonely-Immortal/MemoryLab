@@ -3363,18 +3363,29 @@ async function saveConfig() {
       var llm = (((st.catalog || {}).services || {}).llm) || {};
       var old = (llm.profiles || []).filter(function (p) { return p.id === llm.active_profile_id; })[0] || (llm.profiles || [])[0] || {};
       var oldModel = ((old.models || [])[0]) || {};
+      var profileBase = base || old.base_url || '';
+      var headers = Object.assign({}, old.extra_headers || {});
+      if (profileBase.indexOf('opencode.ai') >= 0 && !headers['x-opencode-session']) {
+        var sid = localStorage.getItem('memoryLabOpencodeSession');
+        if (!sid) {
+          var bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+          sid = 'ses_' + Array.prototype.map.call(bytes, function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+          localStorage.setItem('memoryLabOpencodeSession', sid);
+        }
+        headers['x-opencode-session'] = sid;
+      }
       var profile = {
         id: old.id || 'llm-profile-custom',
         name: old.name || 'Memory Lab',
         binding: old.binding || 'custom',
-        base_url: base || old.base_url || '',
+        base_url: profileBase,
         api_version: old.api_version || '',
-        extra_headers: old.extra_headers || {},
+        extra_headers: headers,
         models: [{ id: oldModel.id || 'llm-model-custom', name: model || oldModel.model || oldModel.name || '', model: model || oldModel.model || oldModel.name || '' }],
         api_format: old.api_format || 'openai_chat',
         wire_api: old.wire_api || 'chat_completions'
       };
-      if (key) profile.api_key = key;
+      profile.api_key = key || '***';
       var resp = await fetch('/dt-api/api/settings/apply/provider', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ service: 'llm', profile: profile, active_model_id: profile.models[0].id, activate: true })
