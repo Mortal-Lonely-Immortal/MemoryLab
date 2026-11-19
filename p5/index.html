@@ -2436,8 +2436,41 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 .page-loading-line { height: 3px; width: 44%; margin: 26px 0 0; background: linear-gradient(90deg, var(--cyan, #35d1e8), var(--red, #e60012)); animation: page-loading 1s ease-in-out infinite alternate; }
 @keyframes page-loading { from { transform: scaleX(.35); transform-origin: left; opacity: .45; } to { transform: scaleX(1); transform-origin: left; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .page-loading-line { animation: none; } }
-html[data-theme="black"] .main { padding-top: 150px; }
-html[data-theme="white"] .main { padding-top: 112px; }
+html[data-theme="black"] .main { padding-top: 84px; }
+html[data-theme="white"] .main { padding-top: 98px; }
+
+/* Logo flip theme switch */
+.p5-nav .logo-flip {
+  position: relative; flex: 0 0 auto; width: 220px; height: 46px;
+  margin-right: 20px; cursor: pointer; perspective: 700px; outline: none;
+}
+.logo-flip-inner {
+  position: absolute; inset: 0; transform-style: preserve-3d;
+  transition: transform .55s cubic-bezier(.2,.8,.25,1);
+}
+.logo-face {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  white-space: nowrap; font-family: var(--font-display);
+  font-size: 28px; font-weight: 900; font-style: italic;
+  letter-spacing: -.02em; line-height: 1;
+}
+.logo-face .lab { font-size: 14px; font-style: normal; margin-left: 5px; letter-spacing: 0; }
+.logo-p5 { color: #f7f4ee; text-shadow: 4px 4px 0 #e60012; transform: rotateY(0deg); }
+.logo-p5 .lab { color: #e60012; }
+.logo-p3 { color: #071a5c; text-shadow: 3px 3px 0 #35d1e8, 4px 4px 0 #cfeaf6; transform: rotateY(180deg); }
+.logo-p3 .lab { color: #1b57ff; }
+.logo-flip:hover .logo-flip-inner { transform: rotateY(180deg); }
+html[data-theme="white"] .logo-p5 { transform: rotateY(180deg); }
+html[data-theme="white"] .logo-p3 { transform: rotateY(0deg); }
+html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(-180deg); }
+.logo-flip.is-switching .logo-flip-inner { transform: rotateY(0deg) !important; }
+.logo-flip:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+@media (max-width: 768px) {
+  .p5-nav .logo-flip { width: 154px; height: 36px; margin-right: 10px; }
+  .logo-face { font-size: 20px; }
+  .logo-face .lab { font-size: 11px; }
+}
 </style>
 <link rel="stylesheet" href="teach.css">
 <link rel="stylesheet" href="archive3d.css?v=8">
@@ -2489,7 +2522,12 @@ html[data-theme="white"] .main { padding-top: 112px; }
 
 <!-- P5 导航 -->
 <nav class="p5-nav" id="p5-nav">
-  <div class="logo">MEMORY<span>LAB</span></div>
+  <div class="logo-flip" id="theme-logo" role="button" tabindex="0" aria-label="切换 Memory Lab 主题" title="悬停翻转；点击切换主题" onclick="toggleTheme()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTheme();}">
+    <div class="logo-flip-inner">
+      <div class="logo-face logo-p5">MEMORY<span class="lab">LAB</span></div>
+      <div class="logo-face logo-p3">MEMORY<span class="lab">LAB</span></div>
+    </div>
+  </div>
   <div class="nav-tab active" data-page="review"><span>REVIEW 复习</span></div>
   <div class="nav-tab" data-page="documents"><span>DOCS 文档</span></div>
   <div class="nav-tab" data-page="teach"><span>TEACH 教学</span></div>
@@ -2497,21 +2535,11 @@ html[data-theme="white"] .main { padding-top: 112px; }
   <div class="nav-tab" data-page="stats"><span>STATS 统计</span></div>
   <div class="nav-tab" data-page="method"><span>LAB 方法</span></div>
   <div class="nav-tab" data-page="settings"><span>CONFIG 设置</span></div>
-  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="切换白色 P3 / 黑色 P5">WHITE 白</button>
+  <div class="nav-tab" data-page="dt-group-study"><span>STUDY 学习</span></div>
+  <div class="nav-tab" data-page="dt-group-library"><span>LIBRARY 资料</span></div>
+  <div class="nav-tab" data-page="dt-group-plan"><span>PLAN 计划</span></div>
+  <div class="nav-tab" data-page="dt-group-ai"><span>AI 助手</span></div>
   <div class="nav-ver">P5<b>·</b>V1.0.12</div>
-  <div class="nav-deep-group">
-    <div class="nav-tab" data-page="dt-overview"><span>OVERVIEW 概览</span></div>
-    <div class="nav-tab" data-page="dt-tutor"><span>TUTOR 导师</span></div>
-    <div class="nav-tab" data-page="dt-learning"><span>LEARNING 学习</span></div>
-    <div class="nav-tab" data-page="dt-knowledge"><span>KNOWLEDGE 知识库</span></div>
-    <div class="nav-tab" data-page="dt-notebook"><span>NOTEBOOK 笔记</span></div>
-    <div class="nav-tab" data-page="dt-memory"><span>MEMORY 记忆</span></div>
-    <div class="nav-tab" data-page="dt-calendar"><span>CALENDAR 日历</span></div>
-    <div class="nav-tab" data-page="dt-tasks"><span>TASKS 任务</span></div>
-    <div class="nav-tab" data-page="dt-partners"><span>PARTNERS 伙伴</span></div>
-    <div class="nav-tab" data-page="dt-research"><span>RESEARCH 研究</span></div>
-    <div class="nav-tab" data-page="dt-visualize"><span>VISUALIZE 可视化</span></div>
-  </div>
 </nav>
 
 <main class="main" id="main-content"></main>
@@ -2706,9 +2734,20 @@ function loadPage(page) {
       if (typeof closeCardsArchive === 'function') closeCardsArchive();
       if (page === 'tutor') page = 'dt-tutor';
       if (page === 'deeptutor') page = 'dt-overview';
+      var navPage = page;
+      if (page.indexOf('dt-group-') === 0) navPage = page;
+      else if (page.indexOf('dt-') === 0) {
+        var sec = page.slice(3);
+        var grp = (sec === 'overview' || sec === 'learning') ? 'study' : (sec === 'knowledge' || sec === 'notebook' || sec === 'memory') ? 'library' : (sec === 'calendar' || sec === 'tasks') ? 'plan' : 'ai';
+        navPage = 'dt-group-' + grp;
+      }
       document.querySelectorAll('.nav-tab').forEach(function (t) {
-        t.classList.toggle('active', t.dataset.page === page);
+        t.classList.toggle('active', t.dataset.page === navPage);
       });
+      if (page.indexOf('dt-group-') === 0) {
+        renderDeepTutorGroup(main, page.slice(9));
+        return;
+      }
       if (page.indexOf('dt-') === 0) {
         renderDeepTutorSection(main, page.slice(3));
         return;
@@ -2734,6 +2773,14 @@ function loadPage(page) {
 // ================================================================
 // 1. AI Tutor
 // ================================================================
+function renderDeepTutorGroup(main, group) {
+  if (!window.DTWorkspace) {
+    main.innerHTML = '<div class="p5-card"><div class="p5-card-header">DEEPTUTOR</div><div class="error-state">DeepTutor 工作台脚本未加载</div></div>';
+    return;
+  }
+  window.DTWorkspace.renderGroup(main, group || 'study');
+}
+
 function renderDeepTutorSection(main, section) {
   if (!window.DTWorkspace) {
     main.innerHTML = '<div class="p5-card"><div class="p5-card-header">DEEPTUTOR</div><div class="error-state">DeepTutor 工作台脚本未加载</div></div>';
@@ -4488,8 +4535,12 @@ function applyTheme(theme, persist) {
 }
 function toggleTheme() {
   var now = document.documentElement.getAttribute('data-theme') === 'white' ? 'black' : 'white';
+  var logo = document.getElementById('theme-logo');
+  if (logo) {
+    logo.classList.add('is-switching');
+    logo.addEventListener('mouseleave', function () { logo.classList.remove('is-switching'); }, { once: true });
+  }
   applyTheme(now, true);
-  showThemeIntro(now);
 }
 
 // ================================================================

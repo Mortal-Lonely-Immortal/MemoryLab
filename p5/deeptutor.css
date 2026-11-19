@@ -88,3 +88,13 @@ html[data-theme="white"] .dt-page-head { box-shadow:6px 6px 0 #cfeaf6; }
 .dt-page-title { font-family:var(--font-display); font-style:italic; font-weight:900; font-size:clamp(24px,2.6vw,38px); line-height:1.05; color:var(--text); margin:4px 0 4px; }
 .dt-page-title span { font-family:var(--font-body); font-style:normal; font-size:16px; color:var(--accent); margin-left:6px; }
 .dt-page-sub { font-family:var(--font-mono); font-size:9px; color:var(--text-dim); letter-spacing:.6px; }
+
+.dt-group { display:flex; flex-direction:column; gap:12px; min-height:calc(100vh - 130px); }
+.dt-group-nav { display:flex; gap:6px; flex-wrap:wrap; border-bottom:1px solid var(--border); padding-bottom:9px; }
+.dt-subtab {
+  border:1px solid var(--border); background:transparent; color:var(--text-dim);
+  font-family:var(--font-mono); font-size:9px; letter-spacing:1px; padding:7px 11px;
+  cursor:pointer; clip-path:polygon(0 0,100% 0,calc(100% - 7px) 100%,0 100%);
+}
+.dt-subtab:hover { border-color:var(--accent); color:var(--text); }
+.dt-subtab.is-active { background:var(--accent); border-color:var(--accent); color:#fff; }

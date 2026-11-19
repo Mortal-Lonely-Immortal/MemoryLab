@@ -62,20 +62,41 @@
     visualize: ['VISUALIZE', '可视化', '图表 · SVG · 解释']
   };
 
-  function renderSection(main, section) {
-    var meta = META[section] || META.overview;
+  var GROUPS = {
+    study: { title: 'STUDY', cn: '学习', sub: '总览 · 掌握路径', sections: ['overview', 'learning'] },
+    library: { title: 'LIBRARY', cn: '资料', sub: '知识库 · 笔记 · 记忆', sections: ['knowledge', 'notebook', 'memory'] },
+    plan: { title: 'PLAN', cn: '计划', sub: '日历 · 任务', sections: ['calendar', 'tasks'] },
+    ai: { title: 'AI', cn: '助手', sub: '导师 · 伙伴 · 研究 · 可视化', sections: ['tutor', 'partners', 'research', 'visualize'] }
+  };
+  function groupFor(section) {
+    for (var g in GROUPS) if (GROUPS[g].sections.indexOf(section) >= 0) return g;
+    return 'study';
+  }
+
+  function renderGroup(main, group, section) {
+    var info = GROUPS[group] || GROUPS.study;
+    var current = section && info.sections.indexOf(section) >= 0 ? section : info.sections[0];
     main.innerHTML =
-      '<div class="dt-direct">' +
+      '<div class="dt-group">' +
         '<div class="dt-page-head">' +
-          '<div class="dt-kicker">DEEPTUTOR / ' + meta[0] + '</div>' +
-          '<div class="dt-page-title">' + meta[0] + ' <span>' + meta[1] + '</span></div>' +
-          '<div class="dt-page-sub">' + meta[2] + '</div>' +
+          '<div class="dt-kicker">DEEPTUTOR / ' + info.title + '</div>' +
+          '<div class="dt-page-title">' + info.title + ' <span>' + info.cn + '</span></div>' +
+          '<div class="dt-page-sub">' + info.sub + '</div>' +
         '</div>' +
+        '<div class="dt-group-nav">' + info.sections.map(function (sec) {
+          var m = META[sec] || [sec, '', ''];
+          return '<button class="dt-subtab' + (sec === current ? ' is-active' : '') + '" data-dt-sub="' + sec + '" onclick="DTWorkspace.navigate(\'' + sec + '\')">' + m[0] + ' ' + m[1] + '</button>';
+        }).join('') + '</div>' +
         '<div class="dt-content" id="dt-content"></div>' +
       '</div>';
     state.content = document.getElementById('dt-content');
-    go(section);
+    go(current);
   }
+
+  function renderSection(main, section) {
+    renderGroup(main, groupFor(section || 'overview'), section || 'overview');
+  }
+
   function navigate(section) { location.hash = '#dt-' + section; }
 
   var TABS = [
@@ -101,8 +122,8 @@
     var content = document.getElementById('dt-content');
     if (!content) return;
     state.content = content;
-    document.querySelectorAll('.dt-tab').forEach(function (b) {
-      b.classList.toggle('is-active', b.getAttribute('data-dt') === section);
+    document.querySelectorAll('.dt-tab,.dt-subtab').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-dt') === section || b.getAttribute('data-dt-sub') === section);
     });
     content.innerHTML = '<div class="p5-card"><div class="p5-card-header">LOADING 加载中</div></div>';
     var fn = {
@@ -503,12 +524,58 @@
   }
 
   async function partners(content) {
-    var data = await dtApi('/api/partners');
+    var res = await Promise.allSettled([dtApi('/api/partners'), dtApi('/api/partner-groups')]);
+    var data = res[0].status === 'fulfilled' ? res[0].value : [];
     var list = Array.isArray(data) ? data : (data.partners || []);
+    var groups = res[1].status === 'fulfilled' ? (res[1].value.groups || res[1].value || []) : [];
     content.innerHTML = card('PARTNERS 伙伴',
-      '<div style="padding:12px 14px;" class="dt-list">' + (list.length ? list.map(function (p) {
-        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(p.name || p.display_name || 'Partner') + '</b><small>' + esc(p.description || p.persona || '') + '</small></div><span class="dt-pill">' + esc(p.type || 'AGENT') + '</span></div>';
-      }).join('') : empty('还没有配置伙伴。DeepTutor 的 Partners 可在设置中创建。')) + '</div>');
+      '<div style="padding:12px 14px;">' +
+        '<div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newPartner()">NEW PARTNER 新建伙伴</button><button class="btn btn-sm" onclick="DTWorkspace.go(\'partners\')">REFRESH 刷新</button></div>' +
+        '<div class="dt-note" style="margin-top:8px;">伙伴是带独立人格、模型、工具、资源和记忆的常驻智能体；伙伴组可让多个伙伴同桌讨论。账号级配置，不随课程工作区切换。</div>' +
+        '<div class="dt-list" style="margin-top:10px;">' + (list.length ? list.map(function (p) {
+          var name = p.name || p.display_name || 'Partner';
+          var id = p.partner_id || p.id;
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc((p.emoji ? p.emoji + ' ' : '') + name) + '</b><small>' + esc(p.description || '') + (p.model ? ' · ' + esc(p.model) : '') + (p.running ? ' · running' : '') + '</small></div>' +
+            '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.editPartner(\'' + esc(id) + '\')">EDIT 设置</button><button class="btn btn-sm btn-danger" onclick="DTWorkspace.deletePartner(\'' + esc(id) + '\')">DEL</button></div></div>';
+        }).join('') : empty('还没有伙伴。点 NEW PARTNER 创建第一个常驻智能体。')) + '</div>' +
+        (groups.length ? '<div class="dt-note" style="margin-top:10px;">PARTNER GROUPS: ' + groups.map(function(g){return esc(g.name || g.id);}).join(' · ') + '</div>' : '') +
+      '</div>');
+  }
+  function newPartner() {
+    modal('NEW PARTNER 新建伙伴', '创建常驻智能体；之后可编辑人格、模型、工具和资源。',
+      '<div class="dt-form"><input class="dt-input" id="dt-pt-name" placeholder="伙伴名称"><textarea class="dt-textarea" id="dt-pt-desc" rows="2" placeholder="它擅长什么 / 描述"></textarea><div style="display:flex;gap:8px;"><input class="dt-input" id="dt-pt-emoji" placeholder="Emoji（可选）" style="max-width:110px;"><input class="dt-input" id="dt-pt-color" placeholder="#e60012" style="max-width:130px;"><select class="dt-select" id="dt-pt-lang" style="max-width:160px;"><option value="Chinese">中文</option><option value="English">English</option></select></div>' +
+      '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createPartner()">CREATE 创建</button></div></div>');
+  }
+  async function createPartner() {
+    var name = (document.getElementById('dt-pt-name') || {}).value || '';
+    var desc = (document.getElementById('dt-pt-desc') || {}).value || '';
+    var emoji = (document.getElementById('dt-pt-emoji') || {}).value || '';
+    var color = (document.getElementById('dt-pt-color') || {}).value || '#e60012';
+    var lang = (document.getElementById('dt-pt-lang') || {}).value || 'Chinese';
+    if (!name.trim()) { toast('请输入伙伴名称', 'error'); return; }
+    try { await dtApi('/api/partners', { method: 'POST', body: JSON.stringify({ name: name.trim(), description: desc.trim(), emoji: emoji.trim(), color: color, language: lang }) }); closeModal(); toast('伙伴已创建', 'success'); go('partners'); }
+    catch (e) { toast('创建失败：' + e.message, 'error'); }
+  }
+  async function editPartner(id) {
+    try {
+      var p = await dtApi('/api/partners/' + encodeURIComponent(id));
+      modal('PARTNER SETTINGS 伙伴设置', '修改基础信息。人格 SOUL、模型、工具与频道由 DeepTutor 后端管理。',
+        '<div class="dt-form"><input class="dt-input" id="dt-pt-name" value="' + esc(p.name || '') + '"><textarea class="dt-textarea" id="dt-pt-desc" rows="3">' + esc(p.description || '') + '</textarea><div style="display:flex;gap:8px;"><input class="dt-input" id="dt-pt-emoji" value="' + esc(p.emoji || '') + '" style="max-width:110px;"><input class="dt-input" id="dt-pt-color" value="' + esc(p.color || '#e60012') + '" style="max-width:130px;"></div>' +
+        '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.savePartner(\'' + esc(id) + '\')">SAVE 保存</button></div></div>');
+    } catch (e) { toast('读取失败：' + e.message, 'error'); }
+  }
+  async function savePartner(id) {
+    var name = (document.getElementById('dt-pt-name') || {}).value || '';
+    var desc = (document.getElementById('dt-pt-desc') || {}).value || '';
+    var emoji = (document.getElementById('dt-pt-emoji') || {}).value || '';
+    var color = (document.getElementById('dt-pt-color') || {}).value || '#e60012';
+    try { await dtApi('/api/partners/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ name: name.trim(), description: desc.trim(), emoji: emoji.trim(), color: color }) }); closeModal(); toast('伙伴设置已保存', 'success'); go('partners'); }
+    catch (e) { toast('保存失败：' + e.message, 'error'); }
+  }
+  async function deletePartner(id) {
+    if (!confirm('删除伙伴 ' + id + '？')) return;
+    try { await dtApi('/api/partners/' + encodeURIComponent(id), { method: 'DELETE' }); toast('伙伴已删除', 'success'); go('partners'); }
+    catch (e) { toast('删除失败：' + e.message, 'error'); }
   }
 
   async function research(content) {
@@ -536,11 +603,12 @@
   }
 
   window.DTWorkspace = {
-    render: render, renderSection: renderSection, navigate: navigate, go: go, renderTutor: tutor, closeModal: closeModal,
+    render: render, renderGroup: renderGroup, renderSection: renderSection, navigate: navigate, go: go, renderTutor: tutor, closeModal: closeModal,
     newKb: newKb, createKb: createKb, uploadKb: uploadKb, deleteKb: deleteKb,
     newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
     sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
     newEvent: newEvent, createEvent: createEvent, newTask: newTask, createTask: createTask,
-    newMastery: newMastery, createMastery: createMastery
+    newMastery: newMastery, createMastery: createMastery,
+    newPartner: newPartner, createPartner: createPartner, editPartner: editPartner, savePartner: savePartner, deletePartner: deletePartner
   };
 })();
