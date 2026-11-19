@@ -96,7 +96,6 @@
                 '</div>' +
                 '<input type="file" id="teach-file-input" multiple accept=".pdf,.docx,.ppt,.pptx" style="display:none" onchange="teachHandleFiles(this.files)">' +
                 '<input type="file" id="teach-folder-input" webkitdirectory directory multiple style="display:none" onchange="teachHandleFiles(this.files)">' +
-                '<div class="teach-path-note">文件去向：<code>data/docs/uploads/&lt;uuid&gt;_&lt;文件名&gt;</code>。提取后的文字进入 <code>data/docs/tutor.db</code> 的 <code>document_blocks</code>；导师通过 <code>search_textbook</code> 读取这些块，简化结果写回同一张表。</div>' +
                 '<div class="teach-upload-log" id="teach-upload-log">等待资料...</div>' +
               '</div>' +
             '</section>' +
