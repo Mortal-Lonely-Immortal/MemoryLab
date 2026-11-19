@@ -340,7 +340,7 @@ namespace MemoryLabPortable
                 {
                     ProcessStartInfo info = new ProcessStartInfo(edge,
                         "--app=" + Url + " --window-size=1440,1000");
-                    info.UseShellExecute = false;
+                    info.UseShellExecute = true;
                     Process.Start(info);
                 }
                 else
