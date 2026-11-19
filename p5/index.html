@@ -124,6 +124,15 @@ body {
   color: var(--border-strong, #3a5252); letter-spacing: 1px;
 }
 .nav-ver b { color: var(--accent); }
+.p5-nav { flex-wrap: wrap; row-gap: 4px; }
+.nav-deep-group {
+  flex: 0 0 100%; display: flex; flex-wrap: wrap; gap: 0;
+  padding-top: 2px;
+}
+.nav-deep-group .nav-tab { font-size: 9px; letter-spacing: .8px; padding: 6px 10px; }
+html[data-theme="black"] .main { padding-top: 136px; }
+html[data-theme="white"] .main { padding-top: 146px; }
+
 
 /* 移动端 */
 @media (max-width: 768px) {
@@ -2427,6 +2436,8 @@ html[data-theme="black"] .calling-card-embed { display: block; }
 .page-loading-line { height: 3px; width: 44%; margin: 26px 0 0; background: linear-gradient(90deg, var(--cyan, #35d1e8), var(--red, #e60012)); animation: page-loading 1s ease-in-out infinite alternate; }
 @keyframes page-loading { from { transform: scaleX(.35); transform-origin: left; opacity: .45; } to { transform: scaleX(1); transform-origin: left; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .page-loading-line { animation: none; } }
+html[data-theme="black"] .main { padding-top: 150px; }
+html[data-theme="white"] .main { padding-top: 112px; }
 </style>
 <link rel="stylesheet" href="teach.css">
 <link rel="stylesheet" href="archive3d.css?v=8">
@@ -2482,14 +2493,25 @@ html[data-theme="black"] .calling-card-embed { display: block; }
   <div class="nav-tab active" data-page="review"><span>REVIEW 复习</span></div>
   <div class="nav-tab" data-page="documents"><span>DOCS 文档</span></div>
   <div class="nav-tab" data-page="teach"><span>TEACH 教学</span></div>
-  <div class="nav-tab" data-page="tutor"><span>TUTOR 导师</span></div>
-<div class="nav-tab" data-page="deeptutor"><span>DEEPTUTOR 全科</span></div>
   <div class="nav-tab" data-page="cards"><span>CARDS 卡片</span></div>
   <div class="nav-tab" data-page="stats"><span>STATS 统计</span></div>
   <div class="nav-tab" data-page="method"><span>LAB 方法</span></div>
   <div class="nav-tab" data-page="settings"><span>CONFIG 设置</span></div>
   <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="切换白色 P3 / 黑色 P5">WHITE 白</button>
   <div class="nav-ver">P5<b>·</b>FSRS</div>
+  <div class="nav-deep-group">
+    <div class="nav-tab" data-page="dt-overview"><span>OVERVIEW 概览</span></div>
+    <div class="nav-tab" data-page="dt-tutor"><span>TUTOR 导师</span></div>
+    <div class="nav-tab" data-page="dt-learning"><span>LEARNING 学习</span></div>
+    <div class="nav-tab" data-page="dt-knowledge"><span>KNOWLEDGE 知识库</span></div>
+    <div class="nav-tab" data-page="dt-notebook"><span>NOTEBOOK 笔记</span></div>
+    <div class="nav-tab" data-page="dt-memory"><span>MEMORY 记忆</span></div>
+    <div class="nav-tab" data-page="dt-calendar"><span>CALENDAR 日历</span></div>
+    <div class="nav-tab" data-page="dt-tasks"><span>TASKS 任务</span></div>
+    <div class="nav-tab" data-page="dt-partners"><span>PARTNERS 伙伴</span></div>
+    <div class="nav-tab" data-page="dt-research"><span>RESEARCH 研究</span></div>
+    <div class="nav-tab" data-page="dt-visualize"><span>VISUALIZE 可视化</span></div>
+  </div>
 </nav>
 
 <main class="main" id="main-content"></main>
@@ -2682,10 +2704,17 @@ function loadPage(page) {
       if (state.tutorialTimer && state.tutorialTimer.running) await stopTutorialTimer();
       if (typeof teachCleanup === 'function') teachCleanup();
       if (typeof closeCardsArchive === 'function') closeCardsArchive();
-      switch (page) {
+      if (page === 'tutor') page = 'dt-tutor';
+      if (page === 'deeptutor') page = 'dt-overview';
+      document.querySelectorAll('.nav-tab').forEach(function (t) {
+        t.classList.toggle('active', t.dataset.page === page);
+      });
+      if (page.indexOf('dt-') === 0) {
+        renderDeepTutorSection(main, page.slice(3));
+        return;
+      }
+  switch (page) {
         case 'review': await renderReview(main); break;
-        case 'tutor': await renderTutor(main); break;
-    case 'deeptutor': renderDeepTutor(main); break;
         case 'documents': await renderDocuments(main); break;
         case 'teach': await renderTeach(main); break;
         case 'cards': await renderCards(main); break;
@@ -2705,10 +2734,15 @@ function loadPage(page) {
 // ================================================================
 // 1. AI Tutor
 // ================================================================
-function renderDeepTutor(main) {
-  if (window.DTWorkspace) { window.DTWorkspace.render(main); return; }
-  main.innerHTML = '<div class="p5-card"><div class="p5-card-header">DEEPTUTOR</div><div class="error-state">DeepTutor 工作台脚本未加载</div></div>';
+function renderDeepTutorSection(main, section) {
+  if (!window.DTWorkspace) {
+    main.innerHTML = '<div class="p5-card"><div class="p5-card-header">DEEPTUTOR</div><div class="error-state">DeepTutor 工作台脚本未加载</div></div>';
+    return;
+  }
+  window.DTWorkspace.renderSection(main, section || 'overview');
 }
+
+function renderDeepTutor(main) { renderDeepTutorSection(main, 'overview'); }
 
 async function renderTutor(main) {
   if (window.DTWorkspace && window.DTWorkspace.renderTutor) { window.DTWorkspace.renderTutor(main); return; }
@@ -4416,66 +4450,11 @@ function openTutorOverlay() {
 }
 
 async function openTutorWindow() {
-  if (_tutorFloat && !_tutorFloat.closed) {
-    try { _tutorFloat.focus(); } catch (e) {}
-    return;
-  }
-  if (_tutorOverlay) { _tutorOverlay.style.display = 'flex'; return; }
-  if (!window.documentPictureInPicture || !window.documentPictureInPicture.requestWindow) {
-    openTutorOverlay();
-    return;
-  }
-  var isPopup = false;
-  var win = null;
-  try {
-    win = await window.documentPictureInPicture.requestWindow({ width: 400, height: 620 });
-    _tutorFloat = win;
-    var doc = win.document;
-    doc.open(); doc.write(tutorFloatMarkup(isPopup)); doc.close();
-    doc.title = 'AI 导师';
-    doc.getElementById('tv-close').onclick = function() { try { win.close(); } catch (e) {} };
-    var log = doc.getElementById('tv-log');
-    var input = doc.getElementById('tv-input');
-    var send = doc.getElementById('tv-send');
-    function add(role, text) {
-      var el = doc.createElement('div');
-      el.className = 'tv-msg ' + role;
-      el.textContent = text;
-      log.appendChild(el);
-      log.scrollTop = log.scrollHeight;
-    }
-    async function load() {
-      try {
-        var r = await fetch('/api/tutor/history?user_id=' + userId);
-        var history = await r.json();
-        log.innerHTML = '';
-        if (!history.length) add('sys', '开始对话吧');
-        history.forEach(function(h) { add(h.role === 'user' ? 'user' : 'assistant', h.content); });
-      } catch (e) { log.innerHTML = ''; add('sys', '历史加载失败'); }
-    }
-    async function sendMsg() {
-      var text = input.value.trim();
-      if (!text) return;
-      input.value = '';
-      add('user', text);
-      var loading = doc.createElement('div'); loading.className = 'tv-msg sys'; loading.textContent = '思考中…'; log.appendChild(loading); log.scrollTop = log.scrollHeight;
-      try {
-        var r = await fetch('/api/tutor/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question:text, user_id:userId}) });
-        var data = await r.json();
-        loading.remove();
-        add('assistant', data.answer || data.error || '没有回答');
-      } catch (e) { loading.remove(); add('sys', '请求失败'); }
-    }
-    send.onclick = sendMsg;
-    input.addEventListener('keypress', function(e) { if (e.key === 'Enter') sendMsg(); });
-    win.addEventListener('pagehide', function() { _tutorFloat = null; });
-    load();
-  } catch (e) {
-    openTutorOverlay();
-    showToast('系统置顶浮窗不可用，已切到应用内浮窗', 'info');
-  }
+  try { location.hash = '#dt-tutor'; } catch (e) {}
+  setTimeout(function () {
+    if (window.DTWorkspace) window.DTWorkspace.openChatMode('chat');
+  }, 260);
 }
-
 
 // ================================================================
 // Black (P5) / White (P3) theme switch

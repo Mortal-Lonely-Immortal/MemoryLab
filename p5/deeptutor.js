@@ -47,6 +47,37 @@
     return '<div class="dt-status">' + (ok ? 'DEEPTUTOR CONNECTED' : 'DEEPTUTOR OFFLINE') + ' · ' + esc(text || '127.0.0.1:8001') + '</div>';
   }
 
+
+  var META = {
+    overview: ['OVERVIEW', '学习总览', '知识库、笔记、任务与记忆状态'],
+    tutor: ['TUTOR', '导师', 'Chat · Explain · Solve · Research · Visualize'],
+    learning: ['LEARNING', '学习', 'Mastery Path · Book · Reading'],
+    knowledge: ['KNOWLEDGE', '知识库', '上传资料 · RAG · 索引'],
+    notebook: ['NOTEBOOK', '笔记', '按主题收集 · 复习'],
+    memory: ['MEMORY', '记忆', 'L1 事实 · L2 学习状态 · L3 画像'],
+    calendar: ['CALENDAR', '日历', '学习计划 · 时间块 · 复习'],
+    tasks: ['TASKS', '任务', '看板 · 进行中 · 已完成'],
+    partners: ['PARTNERS', '伙伴', '多智能体 · 协作'],
+    research: ['RESEARCH', '研究', '深搜 · 论文 · 证据'],
+    visualize: ['VISUALIZE', '可视化', '图表 · SVG · 解释']
+  };
+
+  function renderSection(main, section) {
+    var meta = META[section] || META.overview;
+    main.innerHTML =
+      '<div class="dt-direct">' +
+        '<div class="dt-page-head">' +
+          '<div class="dt-kicker">DEEPTUTOR / ' + meta[0] + '</div>' +
+          '<div class="dt-page-title">' + meta[0] + ' <span>' + meta[1] + '</span></div>' +
+          '<div class="dt-page-sub">' + meta[2] + '</div>' +
+        '</div>' +
+        '<div class="dt-content" id="dt-content"></div>' +
+      '</div>';
+    state.content = document.getElementById('dt-content');
+    go(section);
+  }
+  function navigate(section) { location.hash = '#dt-' + section; }
+
   var TABS = [
     ['overview', 'OVERVIEW 概览'],
     ['tutor', 'TUTOR 导师'],
@@ -62,21 +93,7 @@
   ];
 
   function render(main) {
-    state.content = null;
-    main.innerHTML =
-      '<div class="dt-shell">' +
-        '<div class="dt-hero">' +
-          '<div class="dt-kicker">DEEPTUTOR / LEARNING OPERATING SYSTEM</div>' +
-          '<div class="dt-title">DEEPTUTOR</div>' +
-          '<div class="dt-sub">Chat · Learning · Knowledge · Notebook · Memory · Calendar · Tasks · Partners · Research · Visualize<br>完整能力接入 Memory Lab 的 P5 工作台，不再使用独立页面。</div>' +
-          '<div class="dt-status">DEEPTUTOR CONNECTED · 127.0.0.1:8001</div>' +
-        '</div>' +
-        '<div class="dt-nav">' + TABS.map(function (t) {
-          return '<button class="dt-tab" data-dt="' + t[0] + '" onclick="DTWorkspace.go(\'' + t[0] + '\')">' + t[1] + '</button>';
-        }).join('') + '</div>' +
-        '<div class="dt-content" id="dt-content"></div>' +
-      '</div>';
-    go('overview');
+    renderSection(main, 'overview');
   }
 
   function go(section) {
@@ -148,7 +165,7 @@
       '<div class="dt-note">DeepTutor workspace: <code>data/deeptutor</code> · 与 Memory Lab 卡片/文档数据隔离，导入前不会改写现有数据。</div>';
   }
   function feature(key, name, sub) {
-    return '<button class="dt-feature" onclick="DTWorkspace.go(\'' + key + '\')"><b>' + name + '</b><small>' + sub + '</small></button>';
+    return '<button class="dt-feature" onclick="DTWorkspace.navigate(\'' + key + '\')"><b>' + name + '</b><small>' + sub + '</small></button>';
   }
 
   function tutor(content) {
@@ -173,6 +190,7 @@
     if (input) input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
     paintChat();
     connectChat();
+    if (window.__dtPendingMode) { setChatMode(window.__dtPendingMode); window.__dtPendingMode = null; }
   }
 
   function paintChat() {
@@ -261,8 +279,12 @@
     if (input) input.placeholder = state.chat.mode === 'research' ? '输入研究问题、论文主题或需要核实的观点…' : state.chat.mode === 'visualize' ? '描述要生成的图表、关系图或可视化…' : state.chat.mode === 'solve' ? '输入题目，DeepTutor 会展示推理与步骤…' : state.chat.mode === 'explain' ? '输入概念，让导师拆解…' : '问课程、题目、文档，或让它制定学习路径…';
   }
   function openChatMode(mode) {
-    go('tutor');
-    setTimeout(function () { setChatMode(mode); }, 120);
+    window.__dtPendingMode = mode;
+    if (location.hash === '#dt-tutor') {
+      setChatMode(mode);
+    } else {
+      location.hash = '#dt-tutor';
+    }
   }
   function newChat() {
     if (state.chat && state.chat.socket) { try { state.chat.socket.close(); } catch (e) {} }
@@ -280,7 +302,8 @@
     var topics = (res[0].status === 'fulfilled' && res[0].value.topics) || [];
     var books = (res[1].status === 'fulfilled' && res[1].value.books) || [];
     var readings = (res[2].status === 'fulfilled' && res[2].value.workspaces) || [];
-    content.innerHTML = '<div class="dt-two">' +
+    content.innerHTML = '<div class="dt-actions" style="justify-content:flex-end;margin-bottom:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newMastery()">NEW PATH 新建路径</button></div>' +
+      '<div class="dt-two">' +
       card('MASTERY PATH 掌握路径', topics.length ? '<div class="dt-list" style="padding:6px 14px;">' + topics.map(function (t) {
         return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(t.title || t.name || t.topic) + '</b><small>' + esc(t.status || t.progress || '') + '</small></div><span class="dt-pill">PATH</span></div>';
       }).join('') + '</div>' : empty('还没有掌握路径')) +
@@ -402,13 +425,39 @@
   }
 
   async function calendar(content) {
-    var data = await dtApi('/api/calendar/calendars');
-    var cals = (data && data.calendars) || [];
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    var end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+    var res = await Promise.allSettled([dtApi('/api/calendar/calendars'), dtApi('/api/calendar/events?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end) + '&tz=Asia%2FShanghai')]);
+    var data = res[0].status === 'fulfilled' ? res[0].value : { calendars: [] };
+    var events = (res[1].status === 'fulfilled' && res[1].value.occurrences) || [];
+    var cals = data.calendars || [];
     content.innerHTML = card('CALENDAR 日历',
-      '<div style="padding:12px 14px;" class="dt-list">' + cals.map(function (c) {
-        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(c.name || 'Study calendar') + '</b><small>' + esc(c.id) + ' · ' + (c.visible ? 'visible' : 'hidden') + '</small></div><span class="dt-pill" style="border-color:' + esc(c.color || '#e60012') + '">CAL</span></div>';
-      }).join('') + '</div>' +
-      '<div class="dt-note">日历与 DeepTutor 的学习计划、Mastery review、任务块共享。</div>');
+      '<div style="padding:12px 14px;">' +
+        '<div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newEvent()">NEW EVENT 新建日程</button><button class="btn btn-sm" onclick="DTWorkspace.go(\'calendar\')">REFRESH 刷新</button></div>' +
+        '<div class="dt-list" style="margin-top:10px;">' + (events.length ? events.map(function (e) {
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(e.title || '(untitled)') + '</b><small>' + fmtDate(e.start) + ' → ' + fmtDate(e.end) + '</small></div><span class="dt-pill">EVENT</span></div>';
+        }).join('') : '<div class="dt-empty">本月还没有日程</div>') + '</div>' +
+        '<div class="dt-note" style="margin-top:10px;">' + cals.length + ' 个日历 · 与 DeepTutor 学习计划、Mastery review、任务块共享。</div>' +
+      '</div>');
+  }
+  function newEvent() {
+    var d = new Date(Date.now() + 3600000);
+    function local(v) { var x = new Date(v); return new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+    modal('NEW EVENT 新建日程', '时间存入 DeepTutor Calendar，和 Mastery review 共用。',
+      '<div class="dt-form"><input class="dt-input" id="dt-ev-title" placeholder="标题"><input class="dt-input" id="dt-ev-start" type="datetime-local" value="' + local(d) + '"><input class="dt-input" id="dt-ev-end" type="datetime-local" value="' + local(new Date(d.getTime() + 3600000)) + '"><textarea class="dt-textarea" id="dt-ev-notes" rows="2" placeholder="备注"></textarea>' +
+      '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createEvent()">CREATE 创建</button></div></div>');
+  }
+  async function createEvent() {
+    var title = (document.getElementById('dt-ev-title') || {}).value || '';
+    var start = (document.getElementById('dt-ev-start') || {}).value;
+    var end = (document.getElementById('dt-ev-end') || {}).value;
+    var notes = (document.getElementById('dt-ev-notes') || {}).value || '';
+    if (!title.trim() || !start || !end) { toast('标题和时间不能为空', 'error'); return; }
+    try {
+      await dtApi('/api/calendar/events', { method: 'POST', body: JSON.stringify({ calendar_id: 'default', title: title.trim(), notes: notes, start: new Date(start).toISOString(), end: new Date(end).toISOString(), tzid: 'Asia/Shanghai' }) });
+      closeModal(); toast('日程已创建', 'success'); go('calendar');
+    } catch (e) { toast('创建失败：' + e.message, 'error'); }
   }
 
   async function tasks(content) {
@@ -416,7 +465,8 @@
     var cards = data.cards || [];
     var groups = { todo: [], doing: [], done: [] };
     cards.forEach(function (c) { (groups[c.status] || groups.todo).push(c); });
-    content.innerHTML = '<div class="dt-grid" style="grid-template-columns:repeat(3,1fr);">' +
+    content.innerHTML = '<div class="dt-actions" style="justify-content:flex-end;margin-bottom:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newTask()">NEW TASK 新建任务</button></div>' +
+      '<div class="dt-grid" style="grid-template-columns:repeat(3,1fr);">' +
       ['todo', 'doing', 'done'].map(function (st) {
         return '<div class="p5-card"><div class="p5-card-header">' + st.toUpperCase() + ' · ' + groups[st].length + '</div><div style="padding:8px 12px;min-height:160px;">' +
           (groups[st].length ? groups[st].map(function (c) {
@@ -424,6 +474,32 @@
           }).join('') : '<div class="dt-empty">EMPTY</div>') + '</div></div>';
       }).join('') + '</div>' +
       '<div class="dt-note">任务看板来自 DeepTutor Task Board；新建卡片与拖拽下一步接入。</div>';
+  }
+
+  function newTask() {
+    modal('NEW TASK 新建任务', '任务会进入 DeepTutor Task Board。',
+      '<div class="dt-form"><input class="dt-input" id="dt-task-title" placeholder="任务标题"><textarea class="dt-textarea" id="dt-task-note" rows="2" placeholder="备注"></textarea><input class="dt-input" id="dt-task-due" type="date">' +
+      '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createTask()">CREATE 创建</button></div></div>');
+  }
+  async function createTask() {
+    var title = (document.getElementById('dt-task-title') || {}).value || '';
+    var note = (document.getElementById('dt-task-note') || {}).value || '';
+    var due = (document.getElementById('dt-task-due') || {}).value || null;
+    if (!title.trim()) { toast('请输入任务标题', 'error'); return; }
+    try { await dtApi('/api/task-board/cards', { method: 'POST', body: JSON.stringify({ title: title.trim(), note: note, due_date: due || null }) }); closeModal(); toast('任务已创建', 'success'); go('tasks'); }
+    catch (e) { toast('创建失败：' + e.message, 'error'); }
+  }
+  function newMastery() {
+    modal('NEW MASTERY PATH', '输入学习目标，DeepTutor 会生成掌握路径。',
+      '<div class="dt-form"><input class="dt-input" id="dt-mastery-name" placeholder="路径名称（可选）"><textarea class="dt-textarea" id="dt-mastery-goal" rows="3" placeholder="我想掌握……"></textarea>' +
+      '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createMastery()">CREATE 创建</button></div></div>');
+  }
+  async function createMastery() {
+    var name = (document.getElementById('dt-mastery-name') || {}).value || '';
+    var goal = (document.getElementById('dt-mastery-goal') || {}).value || '';
+    if (!goal.trim()) { toast('请输入学习目标', 'error'); return; }
+    try { await dtApi('/api/mastery-paths/topics', { method: 'POST', body: JSON.stringify({ name: name.trim(), goal: goal.trim(), sources: [], must_cover: [], modules: [] }) }); closeModal(); toast('掌握路径已创建', 'success'); go('learning'); }
+    catch (e) { toast('创建失败：' + e.message, 'error'); }
   }
 
   async function partners(content) {
@@ -460,9 +536,11 @@
   }
 
   window.DTWorkspace = {
-    render: render, go: go, renderTutor: tutor, closeModal: closeModal,
+    render: render, renderSection: renderSection, navigate: navigate, go: go, renderTutor: tutor, closeModal: closeModal,
     newKb: newKb, createKb: createKb, uploadKb: uploadKb, deleteKb: deleteKb,
     newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
-    sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode
+    sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
+    newEvent: newEvent, createEvent: createEvent, newTask: newTask, createTask: createTask,
+    newMastery: newMastery, createMastery: createMastery
   };
 })();

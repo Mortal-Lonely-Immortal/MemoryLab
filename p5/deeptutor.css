@@ -72,3 +72,19 @@ html[data-theme="white"] .dt-hero { box-shadow:8px 8px 0 #cfeaf6; }
   .dt-features, .dt-two { grid-template-columns:1fr; }
   .dt-status { position:static; margin-top:10px; }
 }
+
+.dt-direct { display:flex; flex-direction:column; gap:12px; min-height:calc(100vh - 190px); }
+.dt-page-head {
+  position:relative; overflow:hidden; padding:18px 22px 16px;
+  background:var(--bg-card); border:1px solid var(--border);
+  border-left:5px solid var(--accent); box-shadow:6px 6px 0 rgba(0,0,0,.24);
+}
+html[data-theme="white"] .dt-page-head { box-shadow:6px 6px 0 #cfeaf6; }
+.dt-page-head::after {
+  content:""; position:absolute; right:-24px; top:-40px; width:150px; height:150px;
+  background:var(--accent); opacity:.08; transform:rotate(20deg);
+  clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 93%,50% 71%,21% 93%,32% 57%,2% 35%,39% 35%);
+}
+.dt-page-title { font-family:var(--font-display); font-style:italic; font-weight:900; font-size:clamp(24px,2.6vw,38px); line-height:1.05; color:var(--text); margin:4px 0 4px; }
+.dt-page-title span { font-family:var(--font-body); font-style:normal; font-size:16px; color:var(--accent); margin-left:6px; }
+.dt-page-sub { font-family:var(--font-mono); font-size:9px; color:var(--text-dim); letter-spacing:.6px; }
