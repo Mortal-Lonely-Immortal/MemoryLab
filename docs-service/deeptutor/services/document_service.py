@@ -27,6 +27,7 @@ from pptx import Presentation
 from PIL import Image
 import io
 from deeptutor.config import Config
+from deeptutor.services import ocr_service
 
 
 class DocumentProcessor:
@@ -88,10 +89,58 @@ class DocumentProcessor:
         # 优先解析PDF内置目录（书签/TOC）
         toc = doc.get_toc()
         chapters = self._parse_toc(toc)
+        ocr_chapters = []
+        ocr_chapter_title = None
+        ocr_used = False
 
         for page_num in range(len(doc)):# 遍历每一页
             page = doc[page_num] # 取出当前页对象
             chapter_title = self._find_chapter_for_page(page_num + 1, chapters)# 查当前页属于哪个章节
+
+            # 纯扫描页：没有文字层时，走 Umi-OCR / RapidOCR。
+            # 只处理没有 PDF 目录的文档；有目录时保持原书章节名。
+            ocr_lines = []
+            try:
+                page_text = page.get_text("text").strip()
+            except Exception:
+                page_text = ""
+            if not toc and len(page_text) < 20:
+                try:
+                    if ocr_service.available():
+                        pix = page.get_pixmap(dpi=200)
+                        ocr_lines = ocr_service.recognize_png(pix.tobytes("png"))
+                        if ocr_lines:
+                            ocr_used = True
+                            heading = self._ocr_page_heading(ocr_lines, pix.height)
+                            if heading:
+                                ocr_chapter_title = heading
+                                if not ocr_chapters or ocr_chapters[-1]["title"] != heading:
+                                    ocr_chapters.append({
+                                        "level": 1,
+                                        "title": heading,
+                                        "start_page": page_num + 1
+                                    })
+                            chapter_title = ocr_chapter_title or "OCR 正文"
+                except Exception as e:
+                    print(f"OCR failed on page {page_num + 1}: {e}")
+
+            # 把 OCR 行按原顺序写入 blocks，供后续翻译/重组使用。
+            for line in ocr_lines:
+                txt = (line.get("text") or "").strip()
+                if not txt:
+                    continue
+                is_heading = bool(self._ocr_heading_match(txt))
+                blocks.append({
+                    "block_order": block_order,
+                    "block_type": "heading" if is_heading else "text",
+                    "original_text": txt,
+                    "simplified_text": None,
+                    "image_path": None,
+                    "image_description": None,
+                    "page_number": page_num + 1,
+                    "chapter_title": chapter_title
+                })
+                block_order += 1
 
             # 检测当前页的表格，给每个表格分配唯一ID用于去重
             table_bboxes = {}  #  ← 本页表格字典
@@ -288,7 +337,55 @@ class DocumentProcessor:
                 pass
 
         doc.close()
+        if not toc and ocr_used:
+            if ocr_chapters:
+                for i, ch in enumerate(ocr_chapters):
+                    ch["end_page"] = (ocr_chapters[i + 1]["start_page"] - 1
+                                      if i < len(ocr_chapters) - 1 else 9999)
+                chapters = ocr_chapters
+            else:
+                chapters = [{"level": 1, "title": "OCR 正文", "start_page": 1, "end_page": 9999}]
         return blocks, chapters
+
+    def _ocr_heading_match(self, text):
+        import re
+        t = (text or "").strip()
+        if len(t) > 80:
+            return False
+        patterns = [
+            r"^第\s*[一二三四五六七八九十百零〇0-9]+\s*[章节篇部]",
+            r"^Chapter\s+\d+",
+            r"^Unit\s+\d+",
+            r"^[0-9]+\s*[、.．]\s*\S+",
+            r"^[一二三四五六七八九十]+\s*[、.．]\s*\S+",
+        ]
+        return any(re.match(p, t, re.IGNORECASE) for p in patterns)
+
+    def _ocr_page_heading(self, lines, page_height):
+        """Pick the first chapter-like line on an OCR page."""
+        if not lines:
+            return None
+        heights = []
+        for line in lines:
+            box = line.get("box") or []
+            if len(box) >= 4:
+                ys = [float(pt[1]) for pt in box]
+                heights.append(max(ys) - min(ys))
+        median = sorted(heights)[len(heights) // 2] if heights else 0
+        for line in lines:
+            text = (line.get("text") or "").strip()
+            if not text:
+                continue
+            if self._ocr_heading_match(text):
+                return text
+            box = line.get("box") or []
+            if len(box) >= 4:
+                ys = [float(pt[1]) for pt in box]
+                h = max(ys) - min(ys)
+                # Large, short, standalone line is a likely section heading.
+                if median and h >= median * 1.35 and len(text) <= 32 and not text.endswith(("。", "，", ",", ".")):
+                    return text
+        return None
 
     def _is_formula_block(self, text, font_sizes):
         """

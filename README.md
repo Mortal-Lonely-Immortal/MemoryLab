@@ -13,7 +13,7 @@
 到 GitHub 的 **Releases** 页面下载：
 
 ```text
-MemoryLab-Portable-1.0.12-win64.zip
+MemoryLab-Portable-1.0.13-win64.zip
 ```
 
 1. 解压到有写权限的目录（不要放 `Program Files`）；
@@ -236,3 +236,11 @@ Persona 5 / Persona 3 © ATLUS / SEGA。本项目是非商业 fan project，与 
 - Tutor 直接使用 DeepTutor WebSocket（`/dt-ws`），支持 Chat / Explain / Solve / Research / Visualize 模式。
 - Knowledge、Notebook 使用 DeepTutor HTTP API，经本地 Nginx `/dt-api/` 转发。
 - DeepTutor 使用独立 `data/deeptutor` 工作区；不会改写 Memory Lab 的 1146 张卡与文档。
+
+## 扫描版 PDF / OCR（1.0.13）
+
+- DOCS 上传纯图片 PDF 时，逐页检测文字层；无文字层自动调用内置 RapidOCR（来自 Umi-OCR 的独立引擎）。
+- OCR 文本按位置写回 block_order，后面的翻译/图文重组与普通 PDF 一致。
+- 章节优先读 PDF 书签；没有书签时按 `第X章 / 第X节 / Chapter N / 大字号短标题` 识别章节。
+- OCR 引擎位于 `docs/umi-ocr`，由文档服务按需启动，不弹 Umi-OCR 主界面。
+- Umi-OCR 使用 MIT License，许可证随包放在 `docs/umi-ocr/LICENSE`。

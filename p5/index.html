@@ -2539,7 +2539,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
   <div class="nav-tab" data-page="dt-group-library"><span>LIBRARY 资料</span></div>
   <div class="nav-tab" data-page="dt-group-plan"><span>PLAN 计划</span></div>
   <div class="nav-tab" data-page="dt-group-ai"><span>AI 助手</span></div>
-  <div class="nav-ver">P5<b>·</b>V1.0.12</div>
+  <div class="nav-ver">P5<b>·</b>V1.0.13</div>
 </nav>
 
 <main class="main" id="main-content"></main>
@@ -4525,7 +4525,7 @@ function applyTheme(theme, persist) {
   }
   document.title = theme === 'white' ? '记忆实验室 · P3' : '记忆实验室 · P5';
   var ver = document.querySelector('.nav-ver');
-  if (ver) ver.innerHTML = theme === 'white' ? 'P3<b>·</b>V1.0.12' : 'P5<b>·</b>V1.0.12';
+  if (ver) ver.innerHTML = theme === 'white' ? 'P3<b>·</b>V1.0.13' : 'P5<b>·</b>V1.0.13';
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = theme === 'white' ? '#eef5f9' : '#0d1718';
   if (document.getElementById('persona-chart') && typeof initPersona === 'function') initPersona();
