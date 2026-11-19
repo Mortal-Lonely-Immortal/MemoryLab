@@ -3330,8 +3330,13 @@ async function renderSettings(main) {
           '<div><label style="font-size:11px;color:var(--text-dim);letter-spacing:1px;">MODEL 模型</label><input id="cfg-model" value="' + (cfg.model||'') + '" placeholder="gpt-3.5-turbo"></div>' +
           '<button class="btn btn-primary" onclick="saveConfig()" style="margin-top:8px;">SAVE CONFIG 保存配置</button>' +
         '</div>' +
-      '</div></div></div>';
+      '</div></div></div>' +
+      '<div class="p5-card" style="margin-top:14px;"><div class="p5-card-header">DEEPTUTOR MODEL 全科模型</div>' +
+        '<div id="dt-model-body" style="padding:12px 14px;"></div>' +
+        '<p class="settings-note" style="padding:0 14px 12px;">这是 DeepTutor 全科导师使用的模型，与上面的 Memory Lab 教材接口分开配置。</p>' +
+      '</div>';
     mountCallingCard(document.getElementById('about-calling-card'), ['YOUR MEMORY', 'IS OURS'], 'TAKE YOUR HEART');
+    if (window.DTWorkspace) window.DTWorkspace.mountModelConfig(document.getElementById('dt-model-body'));
   } catch(e) {
     main.innerHTML = '<div class="error-state">Failed to load settings 设置加载失败：' + escapeHtml(e.message) + '</div>';
   }

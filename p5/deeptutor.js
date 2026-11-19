@@ -602,6 +602,76 @@
         }).join('') + '</div>' : empty('还没有可视化记录')) + '</div>');
   }
 
+  async function modelState() {
+    var s = await dtApi('/api/settings');
+    var llm = (((s.catalog || {}).services || {}).llm) || {};
+    var profiles = llm.profiles || [];
+    var p = profiles.filter(function (x) { return x.id === llm.active_profile_id; })[0] || profiles[0] || null;
+    var model = p ? (p.models || []).filter(function (m) { return m.id === llm.active_model_id; })[0] || (p.models || [])[0] : null;
+    return { settings: s, profile: p, model: model, llm: llm };
+  }
+  async function mountModelConfig(el) {
+    if (!el) return;
+    el.innerHTML = '<div class="dt-empty">读取 DeepTutor 模型配置…</div>';
+    try {
+      var st = await modelState();
+      if (!st.profile) {
+        el.innerHTML = '<div class="dt-note">还没有配置模型。</div><div class="dt-actions" style="margin-top:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.editModel()">CONFIGURE 配置模型</button></div>';
+        return;
+      }
+      el.innerHTML = '<div class="dt-list">' +
+        '<div class="dt-row"><div class="dt-row-main"><b>' + esc(st.model ? (st.model.name || st.model.model) : 'No model') + '</b><small>' + esc(st.profile.binding || 'custom') + ' · ' + esc(st.profile.base_url || '') + '</small></div><span class="dt-pill">' + esc(st.profile.api_format || 'auto') + '</span></div>' +
+        '</div><div class="dt-actions" style="margin-top:8px;"><button class="btn btn-sm" onclick="DTWorkspace.editModel()">EDIT 修改</button></div>';
+    } catch (e) {
+      el.innerHTML = '<div class="error-state">' + esc(e.message) + '</div>';
+    }
+  }
+  async function editModel() {
+    try {
+      var st = await modelState();
+      var p = st.profile || { binding: 'custom', name: 'Agent Setup', base_url: '', api_format: 'openai_chat', models: [] };
+      var m = st.model || { id: 'llm-model', name: 'deepseek-v4.1-flash', model: 'deepseek-v4.1-flash' };
+      modal('DEEPTUTOR MODEL 模型配置', '保存后 DeepTutor 使用该模型；当前 Key 只显示掩码，留空表示不修改。',
+        '<div class="dt-form">' +
+          '<input class="dt-input" id="dtm-name" value="' + esc(p.name || 'Agent Setup') + '" placeholder="Profile name">' +
+          '<input class="dt-input" id="dtm-base" value="' + esc(p.base_url || '') + '" placeholder="Base URL，例如 https://api.openai.com/v1">' +
+          '<input class="dt-input" id="dtm-model" value="' + esc(m.model || m.name || '') + '" placeholder="Model ID">' +
+          '<input class="dt-input" id="dtm-key" value="" placeholder="API Key（留空不修改）">' +
+          '<select class="dt-select" id="dtm-format"><option value="openai_chat"' + ((p.api_format || 'openai_chat') === 'openai_chat' ? ' selected' : '') + '>OpenAI Chat</option><option value="openai_responses"' + (p.api_format === 'openai_responses' ? ' selected' : '') + '>OpenAI Responses</option><option value="auto"' + (p.api_format === 'auto' ? ' selected' : '') + '>Auto</option></select>' +
+          '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.saveModel()">SAVE 保存</button></div>' +
+        '</div>');
+    } catch (e) { toast('读取模型配置失败：' + e.message, 'error'); }
+  }
+  async function saveModel() {
+    var name = (document.getElementById('dtm-name') || {}).value || 'Agent Setup';
+    var base = (document.getElementById('dtm-base') || {}).value || '';
+    var model = (document.getElementById('dtm-model') || {}).value || '';
+    var key = (document.getElementById('dtm-key') || {}).value || '';
+    var fmt = (document.getElementById('dtm-format') || {}).value || 'openai_chat';
+    if (!base.trim() || !model.trim()) { toast('Base URL 和 Model 不能为空', 'error'); return; }
+    try {
+      var st = await modelState();
+      var old = st.profile || {};
+      var profile = {
+        id: old.id || 'llm-profile-custom',
+        name: name.trim(),
+        binding: old.binding || 'custom',
+        base_url: base.trim(),
+        api_version: old.api_version || '',
+        extra_headers: old.extra_headers || {},
+        models: [{ id: (st.model && st.model.id) || 'llm-model-custom', name: model.trim(), model: model.trim() }],
+        api_format: fmt,
+        wire_api: old.wire_api || 'chat_completions'
+      };
+      if (key.trim()) profile.api_key = key.trim();
+      await dtApi('/api/settings/apply/provider', { method: 'POST', body: JSON.stringify({ service: 'llm', profile: profile, active_model_id: profile.models[0].id, activate: true }) });
+      closeModal();
+      toast('DeepTutor 模型配置已保存', 'success');
+      var card = document.getElementById('dt-model-body');
+      if (card) mountModelConfig(card);
+    } catch (e) { toast('保存失败：' + e.message, 'error'); }
+  }
+
   window.DTWorkspace = {
     render: render, renderGroup: renderGroup, renderSection: renderSection, navigate: navigate, go: go, renderTutor: tutor, closeModal: closeModal,
     newKb: newKb, createKb: createKb, uploadKb: uploadKb, deleteKb: deleteKb,
@@ -609,6 +679,7 @@
     sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
     newEvent: newEvent, createEvent: createEvent, newTask: newTask, createTask: createTask,
     newMastery: newMastery, createMastery: createMastery,
-    newPartner: newPartner, createPartner: createPartner, editPartner: editPartner, savePartner: savePartner, deletePartner: deletePartner
+    newPartner: newPartner, createPartner: createPartner, editPartner: editPartner, savePartner: savePartner, deletePartner: deletePartner,
+    mountModelConfig: mountModelConfig, editModel: editModel, saveModel: saveModel
   };
 })();
