@@ -244,3 +244,11 @@ Persona 5 / Persona 3 © ATLUS / SEGA。本项目是非商业 fan project，与 
 - 章节优先读 PDF 书签；没有书签时按 `第X章 / 第X节 / Chapter N / 大字号短标题` 识别章节。
 - OCR 引擎位于 `docs/umi-ocr`，由文档服务按需启动，不弹 Umi-OCR 主界面。
 - Umi-OCR 使用 MIT License，许可证随包放在 `docs/umi-ocr/LICENSE`。
+
+## 新手使用手册
+
+- [Word 版](docs/MemoryLab-新手使用手册-1.0.13.docx)
+- [PDF 版](docs/MemoryLab-新手使用手册-1.0.13.pdf)
+- [Markdown 版](docs/MemoryLab-新手使用手册-1.0.13.md)
+
+适合第一次使用的用户：解压、启动、配置 API Key、复习、上传教材、扫描 PDF OCR、备份和常见问题。
