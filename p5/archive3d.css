@@ -64,6 +64,50 @@
   transition: opacity .35s;
 }
 .archive3d-loading.is-done { opacity: 0; }
+.archive3d-auth {
+  width: min(430px, 76%); text-align: center;
+  font-family: var(--font-mono);
+}
+.archive3d-auth-mark {
+  font-size: 8px; letter-spacing: 2.4px; color: #8a7e6e; margin-bottom: 12px;
+}
+.archive3d-auth-title {
+  font-family: var(--font-body); font-size: 18px; font-weight: 700;
+  letter-spacing: 1px; color: #17130f; margin-bottom: 16px;
+}
+.archive3d-auth-track {
+  width: 100%; height: 3px; background: rgba(23,19,15,.18);
+  overflow: hidden; position: relative;
+}
+.archive3d-auth-fill {
+  width: 0%; height: 100%; background: #0b2f74;
+  transition: width .18s ease-out;
+}
+.archive3d-auth-sub {
+  margin-top: 11px; font-size: 7px; letter-spacing: 2px; color: #9a8f80;
+}
+.archive3d-loading.is-success .archive3d-auth-title { color: #0b2f74; }
+.archive3d-loading.is-failed .archive3d-auth-title { color: #9c3a32; }
+
+html[data-theme="black"] .archive3d-loading {
+  background: rgba(13,23,24,.92); color: #e7f1ee;
+}
+html[data-theme="black"] .archive3d-auth-mark { color: #6f8782; }
+html[data-theme="black"] .archive3d-auth-title { color: #e7f1ee; }
+html[data-theme="black"] .archive3d-auth-track { background: rgba(231,241,238,.16); }
+html[data-theme="black"] .archive3d-auth-fill { background: #8b1d18; }
+html[data-theme="black"] .archive3d-auth-sub { color: #55706d; }
+html[data-theme="black"] .archive3d-loading.is-success .archive3d-auth-title { color: #e7f1ee; }
+
+html[data-theme="white"] .archive3d-loading {
+  background: rgba(248,252,255,.94); color: #0a1230;
+}
+html[data-theme="white"] .archive3d-auth-mark { color: #6b7f99; }
+html[data-theme="white"] .archive3d-auth-title { color: #0a1230; }
+html[data-theme="white"] .archive3d-auth-track { background: rgba(10,18,48,.14); }
+html[data-theme="white"] .archive3d-auth-fill { background: #0b2f74; }
+html[data-theme="white"] .archive3d-auth-sub { color: #8a97ad; }
+html[data-theme="white"] .archive3d-loading.is-success .archive3d-auth-title { color: #0b2f74; }
 .archive3d-cols {
   position: absolute; left: 0; right: 0; bottom: 10px; z-index: 2;
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 0 16px;
