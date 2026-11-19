@@ -558,20 +558,124 @@
   }
   async function editPartner(id) {
     try {
-      var p = await dtApi('/api/partners/' + encodeURIComponent(id));
-      modal('PARTNER SETTINGS 伙伴设置', '修改基础信息。人格 SOUL、模型、工具与频道由 DeepTutor 后端管理。',
-        '<div class="dt-form"><input class="dt-input" id="dt-pt-name" value="' + esc(p.name || '') + '"><textarea class="dt-textarea" id="dt-pt-desc" rows="3">' + esc(p.description || '') + '</textarea><div style="display:flex;gap:8px;"><input class="dt-input" id="dt-pt-emoji" value="' + esc(p.emoji || '') + '" style="max-width:110px;"><input class="dt-input" id="dt-pt-color" value="' + esc(p.color || '#e60012') + '" style="max-width:130px;"></div>' +
-        '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.savePartner(\'' + esc(id) + '\')">SAVE 保存</button></div></div>');
-    } catch (e) { toast('读取失败：' + e.message, 'error'); }
+      var rs = await Promise.allSettled([
+        dtApi('/api/partners/' + encodeURIComponent(id)),
+        dtApi('/api/partners/' + encodeURIComponent(id) + '/soul'),
+        dtApi('/api/partners/tool-options'),
+        dtApi('/api/knowledge-bases'),
+        dtApi('/api/settings/llm-options'),
+        dtApi('/api/partners/channels/schema'),
+        dtApi('/api/partners/' + encodeURIComponent(id) + '/assets')
+      ]);
+      function val(i, fallback) { return rs[i].status === 'fulfilled' && rs[i].value ? rs[i].value : fallback; }
+      var p = val(0, {});
+      var soul = val(1, { content: '' });
+      var tools = val(2, { tools: [], builtin_tools: [] });
+      var kbRaw = val(3, {});
+      var kbs = kbRaw.knowledge_bases || kbRaw.items || [];
+      var llm = val(4, { options: [] });
+      var chSchema = val(5, { channels: {} }).channels || {};
+      var assets = val(6, { knowledge_bases: [] });
+      window.__partnerEdit = { p: p, chSchema: chSchema, assets: assets };
+      var enabledTools = p.enabled_tools || [];
+      var builtinTools = p.builtin_tools || [];
+      var mountedKbs = assets.knowledge_bases || [];
+      var commonChannels = ['weixin','feishu','qq','telegram','discord','email','slack','wecom'];
+      var channelKeys = commonChannels.filter(function(k){ return chSchema[k] && chSchema[k].available !== false; });
+      Object.keys(p.channels || {}).forEach(function(k){ if (channelKeys.indexOf(k) < 0 && chSchema[k]) channelKeys.push(k); });
+      var channelHtml = channelKeys.map(function (key) {
+        var ch = chSchema[key] || {};
+        var def = ch.default_config || {};
+        var cfg = (p.channels || {})[key] || {};
+        var fields = Object.keys(def).filter(function (f) {
+          if (f === 'enabled') return false;
+          var t = typeof def[f];
+          if (Array.isArray(def[f])) return f === 'allow_from' || f === 'group_allow_from';
+          return t === 'string' || t === 'number' || t === 'boolean';
+        });
+        var isOn = !!cfg.enabled;
+        return '<details class="dt-channel" data-channel="' + esc(key) + '">' +
+          '<summary><span class="dt-channel-name">' + esc(ch.display_name || key) + '</span><label class="dt-channel-toggle" onclick="event.stopPropagation()"><input type="checkbox" id="dt-ch-' + esc(key) + '-enabled" ' + (isOn ? 'checked' : '') + '> ENABLED</label></summary>' +
+          '<div class="dt-channel-body">' + fields.map(function (f) {
+            var v = cfg[f] !== undefined ? cfg[f] : def[f];
+            var secret = (ch.secret_fields || []).indexOf(f) >= 0;
+            var id = 'dt-ch-' + key + '-' + f;
+            if (Array.isArray(v)) {
+              return '<label class="dt-field"><span>' + esc(f) + '</span><input class="dt-input" data-ch-field="' + esc(f) + '" id="' + esc(id) + '" value="' + esc((v || []).join(', ')) + '" placeholder="逗号分隔"></label>';
+            }
+            if (typeof v === 'boolean') {
+              return '<label class="dt-check"><input type="checkbox" data-ch-field="' + esc(f) + '" id="' + esc(id) + '" ' + (v ? 'checked' : '') + '> ' + esc(f) + '</label>';
+            }
+            var type = typeof v === 'number' ? 'number' : 'text';
+            return '<label class="dt-field"><span>' + esc(f) + '</span><input class="dt-input" type="' + type + '" data-ch-field="' + esc(f) + '" id="' + esc(id) + '" value="' + (secret ? '' : esc(v == null ? '' : v)) + '" placeholder="' + (secret ? '已配置，留空不修改' : '') + '" ' + (secret ? 'data-secret="1"' : '') + '></label>';
+          }).join('') + '</div></details>';
+      }).join('');
+      var modelOptions = (llm.options || []).map(function (o) {
+        var v = o.profile_id + '::' + o.model_id;
+        var cur = p.llm_selection && p.llm_selection.profile_id === o.profile_id && p.llm_selection.model_id === o.model_id;
+        return '<option value="' + esc(v) + '" ' + (cur ? 'selected' : '') + '>' + esc(o.profile_name || o.provider_label || o.provider || 'LLM') + ' / ' + esc(o.model_name || o.model || '') + '</option>';
+      }).join('');
+      modal('PARTNER SETTINGS 伙伴设置', 'SOUL 人格 · 模型 · 工具白名单 · 知识库 · IM 频道',
+        '<div class="dt-form dt-partner-form">' +
+          '<div class="dt-pt-sec"><div class="dt-pt-title">BASIC 基础</div>' +
+            '<input class="dt-input" id="dt-pt-name" value="' + esc(p.name || '') + '" placeholder="伙伴名称">' +
+            '<textarea class="dt-textarea" id="dt-pt-desc" rows="2" placeholder="描述">' + esc(p.description || '') + '</textarea>' +
+            '<div class="dt-inline"><input class="dt-input" id="dt-pt-emoji" value="' + esc(p.emoji || '') + '" placeholder="Emoji"><input class="dt-input" id="dt-pt-color" value="' + esc(p.color || '#e60012') + '" placeholder="#e60012"></div>' +
+          '</div>' +
+          '<div class="dt-pt-sec"><div class="dt-pt-title">SOUL 人格</div><textarea class="dt-textarea" id="dt-pt-soul" rows="8" placeholder="# Soul ...">' + esc(soul.content || '') + '</textarea></div>' +
+          '<div class="dt-pt-sec"><div class="dt-pt-title">MODEL 模型</div><select class="dt-select" id="dt-pt-model"><option value="">Use account default</option>' + modelOptions + '</select></div>' +
+          '<div class="dt-pt-sec"><div class="dt-pt-title">TOOLS 工具白名单</div><div class="dt-check-grid">' + (tools.tools || []).map(function (t) {
+            return '<label class="dt-check" title="' + esc(t.description_i18n && t.description_i18n.zh || t.description || '') + '"><input type="checkbox" data-tool="' + esc(t.name) + '" ' + (enabledTools.indexOf(t.name) >= 0 ? 'checked' : '') + '> ' + esc(t.name) + '</label>';
+          }).join('') + '</div><div class="dt-note" style="margin:6px 0 4px;">BUILTIN 内置工具</div><div class="dt-check-grid">' + (tools.builtin_tools || []).map(function (t) {
+            return '<label class="dt-check" title="' + esc(t.description_i18n && t.description_i18n.zh || t.description || '') + '"><input type="checkbox" data-builtin="' + esc(t.name) + '" ' + (builtinTools.indexOf(t.name) >= 0 ? 'checked' : '') + '> ' + esc(t.name) + '</label>';
+          }).join('') + '</div></div>' +
+          '<div class="dt-pt-sec"><div class="dt-pt-title">KNOWLEDGE 知识库</div><div class="dt-check-grid">' + (kbs.length ? kbs.map(function (k) {
+            var kid = k.id || k.kb_id || k.name;
+            return '<label class="dt-check"><input type="checkbox" data-kb="' + esc(kid) + '" ' + (mountedKbs.indexOf(kid) >= 0 ? 'checked' : '') + '> ' + esc(k.name || kid) + '</label>';
+          }).join('') : '<div class="dt-note">还没有知识库，先在 LIBRARY 里创建。</div>') + '</div></div>' +
+          '<div class="dt-pt-sec"><div class="dt-pt-title">CHANNELS IM 频道</div>' + (channelHtml || '<div class="dt-note">没有可用频道。</div>') + '</div>' +
+          '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.savePartner(\'' + esc(id) + '\')">SAVE ALL 保存全部</button></div>' +
+        '</div>');
+    } catch (e) { toast('读取伙伴设置失败：' + e.message, 'error'); }
   }
   async function savePartner(id) {
     var name = (document.getElementById('dt-pt-name') || {}).value || '';
     var desc = (document.getElementById('dt-pt-desc') || {}).value || '';
     var emoji = (document.getElementById('dt-pt-emoji') || {}).value || '';
     var color = (document.getElementById('dt-pt-color') || {}).value || '#e60012';
-    try { await dtApi('/api/partners/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ name: name.trim(), description: desc.trim(), emoji: emoji.trim(), color: color }) }); closeModal(); toast('伙伴设置已保存', 'success'); go('partners'); }
-    catch (e) { toast('保存失败：' + e.message, 'error'); }
+    var soul = (document.getElementById('dt-pt-soul') || {}).value || '';
+    var modelVal = (document.getElementById('dt-pt-model') || {}).value || '';
+    var enabledTools = Array.prototype.map.call(document.querySelectorAll('[data-tool]:checked'), function (x) { return x.getAttribute('data-tool'); });
+    var builtinTools = Array.prototype.map.call(document.querySelectorAll('[data-builtin]:checked'), function (x) { return x.getAttribute('data-builtin'); });
+    var kbs = Array.prototype.map.call(document.querySelectorAll('[data-kb]:checked'), function (x) { return x.getAttribute('data-kb'); });
+    var llm = null;
+    if (modelVal) { var parts = modelVal.split('::'); llm = { profile_id: parts[0], model_id: parts[1] }; }
+    var oldChannels = (window.__partnerEdit && window.__partnerEdit.p.channels) || {};
+    var channels = JSON.parse(JSON.stringify(oldChannels));
+    document.querySelectorAll('[data-channel]').forEach(function (box) {
+      var key = box.getAttribute('data-channel');
+      var enabled = document.getElementById('dt-ch-' + key + '-enabled');
+      var cfg = channels[key] || {};
+      cfg.enabled = !!(enabled && enabled.checked);
+      box.querySelectorAll('[data-ch-field]').forEach(function (inp) {
+        var f = inp.getAttribute('data-ch-field');
+        var secret = inp.getAttribute('data-secret') === '1';
+        if (inp.type === 'checkbox') cfg[f] = inp.checked;
+        else if (inp.type === 'number') cfg[f] = inp.value === '' ? 0 : Number(inp.value);
+        else if (f === 'allow_from' || f === 'group_allow_from') cfg[f] = inp.value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+        else if (secret && !inp.value) { if (cfg[f] === undefined) cfg[f] = ''; }
+        else cfg[f] = inp.value;
+      });
+      channels[key] = cfg;
+    });
+    try {
+      await dtApi('/api/partners/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ name: name.trim(), description: desc.trim(), emoji: emoji.trim(), color: color, llm_selection: llm, enabled_tools: enabledTools, builtin_tools: builtinTools, channels: channels }) });
+      await dtApi('/api/partners/' + encodeURIComponent(id) + '/soul', { method: 'PUT', body: JSON.stringify({ content: soul }) });
+      if (kbs.length) await dtApi('/api/partners/' + encodeURIComponent(id) + '/assets', { method: 'POST', body: JSON.stringify({ knowledge_bases: kbs }) });
+      closeModal(); toast('伙伴设置已保存', 'success'); go('partners');
+    } catch (e) { toast('保存失败：' + e.message, 'error'); }
   }
+
   async function deletePartner(id) {
     if (!confirm('删除伙伴 ' + id + '？')) return;
     try { await dtApi('/api/partners/' + encodeURIComponent(id), { method: 'DELETE' }); toast('伙伴已删除', 'success'); go('partners'); }

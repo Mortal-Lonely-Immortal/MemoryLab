@@ -98,3 +98,30 @@ html[data-theme="white"] .dt-page-head { box-shadow:6px 6px 0 #cfeaf6; }
 }
 .dt-subtab:hover { border-color:var(--accent); color:var(--text); }
 .dt-subtab.is-active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+.dt-partner-form { max-height: 66vh; overflow: auto; padding-right: 5px; }
+.dt-pt-sec { border-top: 1px solid var(--border); padding: 11px 0 4px; display: grid; gap: 7px; }
+.dt-pt-sec:first-child { border-top: 0; padding-top: 0; }
+.dt-pt-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.4px; color: var(--accent); font-weight: 700; }
+.dt-inline { display: flex; gap: 7px; }
+.dt-inline .dt-input { flex: 1; }
+.dt-check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; }
+.dt-check { display: flex; gap: 6px; align-items: center; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); cursor: pointer; }
+.dt-check input { accent-color: var(--accent); }
+.dt-channel { border: 1px solid var(--border); background: rgba(0,0,0,.12); }
+html[data-theme="white"] .dt-channel { background: #f4fbff; }
+.dt-channel summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 9px; cursor: pointer; list-style: none; }
+.dt-channel summary::-webkit-details-marker { display: none; }
+.dt-channel summary::before { content: "+"; color: var(--accent); font-family: var(--font-mono); font-weight: 700; }
+.dt-channel[open] summary::before { content: "-"; }
+.dt-channel-name { flex: 1; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; }
+.dt-channel-toggle { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); display: flex; align-items: center; gap: 4px; }
+.dt-channel-body { display: grid; gap: 6px; padding: 8px 10px 10px; border-top: 1px dashed var(--border); }
+.dt-field { display: grid; gap: 3px; font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); }
+.dt-field .dt-input { font-size: 11px; height: 29px; }
+@media (max-width: 620px) { .dt-check-grid { grid-template-columns: 1fr; } }
+
+.dt-partner-form > .dt-actions {
+  position: sticky; bottom: 0; z-index: 3; padding: 9px 0;
+  background: var(--bg-card); border-top: 1px solid var(--border);
+}
