@@ -57,3 +57,25 @@ DeepSeek 官方 API 提供 Chat / Responses / Messages / FIM / Models / Balance 
 - `REINDEX ALL` 会对所有知识库逐个调用重建接口；空知识库可能失败，属于正常。
 - 修改 Embedding 模型或维度后，旧索引需要重建，否则签名不匹配。
 - 当前 UI 的向量维度来自推荐预设；自定义模型需要自己填写正确维度。
+
+
+## SSL 证书验证失败
+
+如果出现：
+
+```text
+[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed:
+unable to get local issuer certificate
+```
+
+说明系统代理/安全软件替换了 HTTPS 证书，Windows 信任它，但 Python 自带的 certifi 不信任。
+
+便携包已加入 `truststore` 启动引导，改用 Windows 证书库：
+
+- `deep-tutor/truststore_bootstrap/sitecustomize.py`
+- `deep-tutor/start-deeptutor.cmd` 设置 `PYTHONPATH`
+- 同时写入 `.venv/Lib/site-packages/sitecustomize.py`
+
+**修改后必须完全退出 Memory Lab 再重新打开**，只刷新页面不够，因为 DeepTutor 后端进程需要重启。
+
+如果重启后仍失败，检查代理软件是否使用了自己的根证书；需要把该根证书安装到 Windows“受信任的根证书颁发机构”，或暂时关闭 HTTPS 扫描。

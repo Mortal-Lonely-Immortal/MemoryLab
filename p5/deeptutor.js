@@ -1322,7 +1322,12 @@
       setEmbStatus('连接失败：' + ((r && (r.error || r.message)) || '未知错误'), true);
       return false;
     } catch (e) {
-      setEmbStatus('连接失败：' + e.message, true);
+      var msg = String(e.message || e);
+      if (/CERTIFICATE_VERIFY_FAILED|SSL/i.test(msg)) {
+        setEmbStatus('SSL 证书验证失败：系统代理/安全软件替换了 HTTPS 证书，Python 不信任。已内置 Windows 证书库修复；请完全退出 Memory Lab 再重新打开，然后重试。', true);
+      } else {
+        setEmbStatus('连接失败：' + msg, true);
+      }
       return false;
     }
   }
