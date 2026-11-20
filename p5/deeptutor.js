@@ -789,7 +789,7 @@
       var e = (st && st.embeddings) || {};
       ingestState.embeddingReady = e.status === 'configured';
       if (!ingestState.embeddingReady) {
-        el.innerHTML = '<span style="color:var(--accent);">EMBEDDING 未配置：文件仍会存入 Knowledge，但不会建立向量索引。当前 P5 只配置了聊天模型，Embedding 是独立模型；接入后在 KNOWLEDGE → OPEN → REINDEX。</span>';
+        el.innerHTML = '<span style="color:var(--accent);">EMBEDDING 未配置：文件仍会存入 Knowledge，但不会建立向量索引。DeepSeek 聊天 Key 不能代替 Embedding；需要单独的向量模型。当前 P5 只配置了聊天模型，接入后在 KNOWLEDGE → OPEN → REINDEX。</span>';
       } else {
         el.textContent = 'EMBEDDING 已配置：知识库会自动建立索引。';
       }

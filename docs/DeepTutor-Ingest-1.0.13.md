@@ -76,3 +76,10 @@
 - AI 分类：Java 后端 / 计算机网络 / 数学 / 操作系统
 - 归档：4 个文件成功；4 个知识库、4 个笔记本、4 条记录；PDF 同步 DOCS。
 - 嵌入未配置时显示“已归档（未索引）”，不误报为完整索引成功。
+
+
+## FAQ：为什么 DeepSeek 不能当 Embedding
+
+DeepSeek 官方 API 目前提供 Chat / Responses / Messages / FIM / Models / Balance / Files / Search / Fetch / OCR / TTS / ASR，没有 `/embeddings` 接口，也没有专用 Embedding 模型。它兼容 OpenAI 的 Chat 协议，但不等于实现了 OpenAI 的所有端点。
+
+DeepTutor 的 RAG 需要把文本转成向量，因此必须单独配置一个 Embedding 模型；DeepSeek 的聊天 Key 不能替代。
