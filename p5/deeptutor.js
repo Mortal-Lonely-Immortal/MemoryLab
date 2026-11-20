@@ -11,7 +11,8 @@
   }
   function fmtDate(v) {
     if (!v) return '';
-    var d = new Date(v);
+    var n = Number(v);
+    var d = new Date(n && n < 100000000000 ? n * 1000 : v);
     if (isNaN(d.getTime())) return String(v);
     return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
@@ -52,6 +53,9 @@
     overview: ['OVERVIEW', '学习总览', '知识库、笔记、任务与记忆状态'],
     tutor: ['TUTOR', '导师', 'Chat · Explain · Solve · Research · Visualize'],
     learning: ['LEARNING', '学习', 'Mastery Path · Book · Reading'],
+    books: ['BOOKS', '学习书', '从资料生成书 · 章节阅读'],
+    reading: ['READING', '阅读', '阅读工作区 · 材料 · 会话'],
+    practice: ['PRACTICE', '练习', '题库 · 错题 · 复习'],
     knowledge: ['KNOWLEDGE', '知识库', '上传资料 · RAG · 索引'],
     notebook: ['NOTEBOOK', '笔记', '按主题收集 · 复习'],
     memory: ['MEMORY', '记忆', 'L1 事实 · L2 学习状态 · L3 画像'],
@@ -63,7 +67,7 @@
   };
 
   var GROUPS = {
-    study: { title: 'STUDY', cn: '学习', sub: '总览 · 掌握路径', sections: ['overview', 'learning'] },
+    study: { title: 'STUDY', cn: '学习', sub: '总览 · 掌握路径 · 书 · 阅读 · 练习', sections: ['overview', 'learning', 'books', 'reading', 'practice'] },
     library: { title: 'LIBRARY', cn: '资料', sub: '知识库 · 笔记 · 记忆', sections: ['knowledge', 'notebook', 'memory'] },
     plan: { title: 'PLAN', cn: '计划', sub: '日历 · 任务', sections: ['calendar', 'tasks'] },
     ai: { title: 'AI', cn: '助手', sub: '导师 · 伙伴 · 研究 · 可视化', sections: ['tutor', 'partners', 'research', 'visualize'] }
@@ -128,6 +132,7 @@
     content.innerHTML = '<div class="p5-card"><div class="p5-card-header">LOADING 加载中</div></div>';
     var fn = {
       overview: overview, tutor: tutor, learning: learning, knowledge: knowledge,
+      books: books, reading: reading, practice: practice,
       notebook: notebook, memory: memory, calendar: calendar, tasks: tasks,
       partners: partners, research: research, visualize: visualize
     }[section];
@@ -194,7 +199,7 @@
     content.innerHTML =
       '<div class="p5-card">' +
         '<div class="p5-card-header">DEEPTUTOR CHAT 导师' +
-          '<div class="dt-actions" style="margin-left:auto;"><button class="btn btn-sm" onclick="DTWorkspace.newChat()">NEW 新对话</button></div>' +
+          '<div class="dt-actions" style="margin-left:auto;"><button class="btn btn-sm" onclick="DTWorkspace.openSessionHistory()">HISTORY 历史</button><button class="btn btn-sm" onclick="DTWorkspace.newChat()">NEW 新对话</button></div>' +
         '</div>' +
         '<div class="dt-chat-wrap" style="padding:12px 14px;">' +
           '<div class="dt-chat-log" id="dt-chat-log"></div>' +
@@ -221,11 +226,124 @@
       log.innerHTML = '<div class="dt-empty">DEEPTUTOR CHAT · 支持课程解释、题目求解、学习路径、知识库引用。<br>当前会话由 DeepTutor 记忆与工具驱动。</div>';
       return;
     }
-    log.innerHTML = state.chat.messages.map(function (m) {
-      return '<div class="dt-msg ' + (m.role === 'user' ? 'user' : (m.role === 'sys' ? 'sys' : '')) + '">' + esc(m.text) + '</div>';
+    log.innerHTML = state.chat.messages.map(function (m, i) {
+      var cls = m.role === 'user' ? 'user' : (m.role === 'sys' ? 'sys' : '');
+      var actions = m.role === 'assistant' && m.text ? '<div class="dt-msg-actions"><button class="dt-mini-btn" onclick="DTWorkspace.saveChatToNotebook(' + i + ')">SAVE TO NOTEBOOK 保存</button></div>' : '';
+      return '<div class="dt-msg ' + cls + '">' + esc(m.text) + actions + '</div>';
     }).join('');
     log.scrollTop = log.scrollHeight;
   }
+  async function openSessionHistory() {
+    try {
+      var data = await dtApi('/api/sessions?limit=30&all_workspaces=true');
+      var rows = ((data && data.sessions) || []).filter(function (x) { return !(x.preferences && x.preferences.archived) && !x.archived && !x.is_deleted; });
+      var body = '<div class="dt-actions" style="margin-bottom:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newChat()">NEW CHAT 新对话</button><button class="btn btn-sm" onclick="DTWorkspace.openRecycleBin()">ARCHIVED 回收站</button></div>';
+      body += rows.length ? '<div class="dt-list">' + rows.map(function (s) {
+        var id = s.id || s.session_id;
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(s.title || 'Untitled') + '</b><small>' + esc(s.capability || 'chat') + ' · ' + (s.message_count || 0) + ' msgs · ' + fmtDate(s.updated_at) + '</small></div>' +
+          '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.openSession(\'' + esc(id) + '\')">OPEN</button>' +
+          '<button class="btn btn-sm" onclick="DTWorkspace.renameSession(\'' + esc(id) + '\',\'' + esc(s.title || '') + '\')">RENAME</button>' +
+          '<button class="btn btn-sm btn-danger" onclick="DTWorkspace.deleteSession(\'' + esc(id) + '\')">DEL</button></div></div>';
+      }).join('') + '</div>' : empty('还没有历史会话。');
+      modal('CHAT HISTORY 对话历史', '恢复、重命名或删除以前的会话', body);
+    } catch (e) { toast('读取历史失败：' + e.message, 'error'); }
+  }
+  async function openRecycleBin() {
+    try {
+      var data = await dtApi('/api/sessions?limit=100&all_workspaces=true');
+      var rows = ((data && data.sessions) || []).filter(function (x) { return (x.preferences && x.preferences.archived) || x.archived || x.is_deleted; });
+      try { var rb = await dtApi('/api/sessions/recycle-bin?limit=30'); var extra = rb.sessions || []; extra.forEach(function (x) { if (!rows.some(function (y) { return (y.id || y.session_id) === (x.id || x.session_id); })) rows.push(x); }); } catch (e) {}
+      modal('RECYCLE BIN 回收站', rows.length ? rows.length + ' 个已删除会话' : '空',
+        (rows.length ? '<div class="dt-list">' + rows.map(function (s) {
+          var id = s.id || s.session_id;
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(s.title || 'Untitled') + '</b><small>' + fmtDate(s.deleted_at || s.updated_at) + '</small></div><button class="btn btn-sm btn-primary" onclick="DTWorkspace.restoreSession(\'' + esc(id) + '\')">RESTORE</button></div>';
+        }).join('') + '</div>' : '<div class="dt-empty">回收站是空的</div>') + '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.openSessionHistory()">BACK 返回历史</button></div>');
+    } catch (e) { toast('读取回收站失败：' + e.message, 'error'); }
+  }
+  async function openSession(id) {
+    try {
+      var s = await dtApi('/api/sessions/' + encodeURIComponent(id));
+      closeModal();
+      state.chat = state.chat || { messages: [] };
+      state.chat.sessionId = id;
+      state.chat.mode = 'chat';
+      state.chat.masteryPathId = null;
+      state.chat.messages = (s.messages || []).map(function (m) {
+        return { role: (m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'sys' : 'user')), text: m.content || m.text || '' };
+      }).filter(function (m) { return m.text; });
+      state.chat.busy = false;
+      state.chat.status = '已恢复 · ' + (s.title || id);
+      if (location.hash !== '#dt-tutor') location.hash = '#dt-tutor';
+      setTimeout(function () { var c = document.getElementById('dt-content'); if (c) tutor(c); }, 80);
+    } catch (e) { toast('恢复会话失败：' + e.message, 'error'); }
+  }
+  function renameSession(id, oldTitle) {
+    modal('RENAME SESSION 重命名', '只改标题，不改内容。',
+      '<div class="dt-form"><input class="dt-input" id="dt-sess-title" value="' + esc(oldTitle) + '" placeholder="会话标题"><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.saveSessionTitle(\'' + esc(id) + '\')">SAVE 保存</button></div></div>');
+  }
+  async function saveSessionTitle(id) {
+    var title = (document.getElementById('dt-sess-title') || {}).value || '';
+    if (!title.trim()) { toast('标题不能为空', 'error'); return; }
+    try { await dtApi('/api/sessions/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ title: title.trim() }) }); closeModal(); toast('已重命名', 'success'); openSessionHistory(); }
+    catch (e) { toast('重命名失败：' + e.message, 'error'); }
+  }
+  async function deleteSession(id) {
+    if (!confirm('把这个会话移入回收站？')) return;
+    try { await dtApi('/api/sessions/' + encodeURIComponent(id) + '/organization', { method: 'PATCH', body: JSON.stringify({ archived: true }) }); toast('已移入回收站', 'success'); openSessionHistory(); }
+    catch (e) { toast('删除失败：' + e.message, 'error'); }
+  }
+  async function restoreSession(id) {
+    try { await dtApi('/api/sessions/' + encodeURIComponent(id) + '/organization', { method: 'PATCH', body: JSON.stringify({ archived: false }) }); toast('已恢复', 'success'); openSessionHistory(); }
+    catch (e) { toast('恢复失败：' + e.message, 'error'); }
+  }
+  async function saveTextToNotebook(title, text, type, userQuery) {
+    try {
+      var data = await dtApi('/api/notebooks');
+      var list = (data && data.notebooks) || [];
+      if (!list.length) { toast('请先在 LIBRARY → Notebook 建一个笔记本', 'error'); return; }
+      var opts = list.map(function (n) { return '<option value="' + esc(n.id) + '">' + esc(n.name) + '</option>'; }).join('');
+      window.__saveNotebookPayload = { title: title || '', text: text || '', type: type || 'chat', userQuery: userQuery || '' };
+      modal('SAVE TO NOTEBOOK 保存到笔记', '选择目标笔记本；保存后可导出或作为学习资料。',
+        '<div class="dt-form"><input class="dt-input" id="dt-save-nb-title" value="' + esc(title || '') + '"><select class="dt-select" id="dt-save-nb-target">' + opts + '</select><textarea class="dt-textarea" id="dt-save-nb-text" rows="7">' + esc(text || '') + '</textarea><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.confirmSaveText()">SAVE 保存</button></div></div>');
+    } catch (e) { toast('读取笔记本失败：' + e.message, 'error'); }
+  }
+  async function confirmSaveText() {
+    var p = window.__saveNotebookPayload || {};
+    var id = (document.getElementById('dt-save-nb-target') || {}).value || '';
+    var title = (document.getElementById('dt-save-nb-title') || {}).value || p.title;
+    var text = (document.getElementById('dt-save-nb-text') || {}).value || p.text;
+    if (!id || !title.trim() || !text.trim()) { toast('标题和内容不能为空', 'error'); return; }
+    try {
+      await dtApi('/api/notebooks/actions/add-record', { method: 'POST', body: JSON.stringify({ notebook_ids: [id], record_type: p.type || 'chat', title: title.trim(), summary: text.trim().slice(0, 300), user_query: p.userQuery || title.trim(), output: text.trim(), metadata: { source: 'memorylab' }, kb_name: null }) });
+      closeModal(); toast('已保存到笔记本', 'success');
+    } catch (e) { toast('保存失败：' + e.message, 'error'); }
+  }
+
+  async function saveChatToNotebook(index) {
+    if (!state.chat || !state.chat.messages[index]) return;
+    var msg = state.chat.messages[index];
+    try {
+      var data = await dtApi('/api/notebooks');
+      var list = (data && data.notebooks) || [];
+      if (!list.length) { toast('请先在 LIBRARY → Notebook 建一个笔记本', 'error'); return; }
+      var opts = list.map(function (n) { return '<option value="' + esc(n.id) + '">' + esc(n.name) + '</option>'; }).join('');
+      var firstUser = state.chat.messages.filter(function (m) { return m.role === 'user'; }).slice(-1)[0];
+      var title = (msg.text || '').replace(/\s+/g, ' ').slice(0, 70);
+      modal('SAVE TO NOTEBOOK 保存到笔记', '把这条回答收进笔记本，之后可导出或作为学习资料。',
+        '<div class="dt-form"><input class="dt-input" id="dt-save-nb-title" value="' + esc(title) + '"><select class="dt-select" id="dt-save-nb-target">' + opts + '</select><textarea class="dt-textarea" id="dt-save-nb-text" rows="6">' + esc(msg.text) + '</textarea><div class="dt-note">来源：Tutor · Chat</div><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.confirmSaveChat(\'' + esc(firstUser ? firstUser.text : '') + '\')">SAVE 保存</button></div></div>');
+    } catch (e) { toast('读取笔记本失败：' + e.message, 'error'); }
+  }
+  async function confirmSaveChat(userQuery) {
+    var id = (document.getElementById('dt-save-nb-target') || {}).value || '';
+    var title = (document.getElementById('dt-save-nb-title') || {}).value || '';
+    var text = (document.getElementById('dt-save-nb-text') || {}).value || '';
+    if (!id || !title.trim() || !text.trim()) { toast('标题和内容不能为空', 'error'); return; }
+    try {
+      await dtApi('/api/notebooks/actions/add-record', { method: 'POST', body: JSON.stringify({ notebook_ids: [id], record_type: 'chat', title: title.trim(), summary: text.trim().slice(0, 300), user_query: userQuery, output: text.trim(), metadata: { source: 'memorylab-chat' }, kb_name: null }) });
+      closeModal(); toast('已保存到笔记本', 'success');
+    } catch (e) { toast('保存失败：' + e.message, 'error'); }
+  }
+
   function setChatStatus(text) {
     if (!state.chat) return;
     state.chat.status = text || '';
@@ -283,16 +401,19 @@
     connectChat();
     var send = function () {
       if (!state.chat.socket || state.chat.socket.readyState !== 1) { setChatStatus('正在连接…'); setTimeout(send, 500); return; }
-      state.chat.socket.send(JSON.stringify({
+      var turn = {
         type: 'start_turn', protocol_version: '2.0', content: text, capability: state.chat.mode || 'chat',
-        session_id: state.chat.sessionId || null, language: 'Chinese', capability: state.chat.mode || 'chat'
-      }));
+        session_id: state.chat.sessionId || null, language: 'Chinese'
+      };
+      if (state.chat.masteryPathId) { turn.mastery_path_id = state.chat.masteryPathId; turn.mastery_session_mode = 'study'; turn.workspace_mode = 'mastery'; }
+      state.chat.socket.send(JSON.stringify(turn));
     };
     send();
   }
   function setChatMode(mode) {
     if (!state.chat) state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '', mode: 'chat' };
     state.chat.mode = mode || 'chat';
+    if (state.chat.mode !== 'mastery_path') state.chat.masteryPathId = null;
     document.querySelectorAll('#dt-chat-modes [data-dt-mode]').forEach(function (b) {
       b.classList.toggle('is-active', b.getAttribute('data-dt-mode') === state.chat.mode);
     });
@@ -309,7 +430,7 @@
   }
   function newChat() {
     if (state.chat && state.chat.socket) { try { state.chat.socket.close(); } catch (e) {} }
-    state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '新会话' };
+    state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '新会话', mode: 'chat', masteryPathId: null };
     var content = document.getElementById('dt-content');
     if (content) tutor(content);
   }
@@ -326,16 +447,288 @@
     content.innerHTML = '<div class="dt-actions" style="justify-content:flex-end;margin-bottom:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newMastery()">NEW PATH 新建路径</button></div>' +
       '<div class="dt-two">' +
       card('MASTERY PATH 掌握路径', topics.length ? '<div class="dt-list" style="padding:6px 14px;">' + topics.map(function (t) {
-        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(t.title || t.name || t.topic) + '</b><small>' + esc(t.status || t.progress || '') + '</small></div><span class="dt-pill">PATH</span></div>';
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(t.name || t.title || t.topic) + '</b><small>' + esc((t.metadata && t.metadata.goal) || t.status || '') + '</small></div><button class="btn btn-sm" onclick="DTWorkspace.openMastery(\'' + esc(t.path_id || t.id) + '\')">OPEN</button></div>';
       }).join('') + '</div>' : empty('还没有掌握路径')) +
       card('BOOKS 书', books.length ? '<div class="dt-list" style="padding:6px 14px;">' + books.map(function (b) {
-        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(b.title || b.name) + '</b><small>' + esc(b.status || '') + '</small></div><span class="dt-pill">BOOK</span></div>';
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(b.title || b.name) + '</b><small>' + esc(b.status || '') + '</small></div><button class="btn btn-sm" onclick="DTWorkspace.openBook(\'' + esc(b.id) + '\')">OPEN</button></div>';
       }).join('') + '</div>' : empty('还没有学习书')) +
       '</div>' +
       card('READING 阅读', readings.length ? '<div class="dt-list" style="padding:6px 14px;">' + readings.map(function (w) {
-        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(w.title || w.name) + '</b><small>' + esc(w.status || '') + '</small></div><span class="dt-pill">READING</span></div>';
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(w.title || w.name) + '</b><small>' + esc(w.description || '') + '</small></div><button class="btn btn-sm" onclick="DTWorkspace.openReading(\'' + esc(w.workspace_id || w.id) + '\')">OPEN</button></div>';
       }).join('') + '</div>' : empty('还没有阅读工作区')) +
-      '<div class="dt-note">Mastery Path、Book、Reading 的创建与学习流程在 DeepTutor 后端继续可用；当前先把列表与状态接入 P5，创建流程下一步补齐。</div>';
+      '<div class="dt-note">Mastery Path、Book、Reading 现在都可以从各自的 STUDY 子页创建并打开。</div>';
+  }
+
+
+  async function books(content) {
+    var data = await dtApi('/api/books');
+    var list = (data && data.books) || [];
+    content.innerHTML = card('BOOKS 学习书',
+      '<div style="padding:12px 14px;"><div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newBook()">NEW BOOK 新建书</button><button class="btn btn-sm" onclick="DTWorkspace.go(\'books\')">REFRESH 刷新</button></div>' +
+      (list.length ? '<div class="dt-list" style="margin-top:10px;">' + list.map(function (b) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(b.title || b.name || b.id) + '</b><small>' + esc(b.status || 'draft') + ' · ' + (b.chapter_count || 0) + ' chapters · ' + (b.page_count || 0) + ' pages</small></div><button class="btn btn-sm" onclick="DTWorkspace.openBook(\'' + esc(b.id) + '\')">OPEN 打开</button></div>';
+      }).join('') + '</div>' : empty('还没有学习书。新建时输入主题，DeepTutor 会先生成书籍提案。')) + '</div>');
+  }
+  async function newBook() {
+    var kbs = [];
+    try { var d = await dtApi('/api/knowledge-bases'); kbs = Array.isArray(d) ? d : []; } catch (e) {}
+    var kbOpts = kbs.map(function (k) { var n = k.name || k.kb_name || k.id; return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+    modal('NEW BOOK 新建学习书', '输入主题；可选择一个知识库作为来源。生成提案后可确认并编译。',
+      '<div class="dt-form"><input class="dt-input" id="dt-book-intent" placeholder="例如：两周掌握 Java 集合框架"><textarea class="dt-textarea" id="dt-book-desc" rows="2" placeholder="补充范围/目标（可选）"></textarea>' +
+      '<select class="dt-select" id="dt-book-kb"><option value="">不指定知识库</option>' + kbOpts + '</select>' +
+      '<select class="dt-select" id="dt-book-depth"><option value="quick">QUICK 快速</option><option value="standard" selected>STANDARD 标准</option><option value="deep">DEEP 深入</option></select>' +
+      '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createBook()">CREATE 生成提案</button></div></div>');
+  }
+  async function createBook() {
+    var intent = (document.getElementById('dt-book-intent') || {}).value || '';
+    var extra = (document.getElementById('dt-book-desc') || {}).value || '';
+    var kb = (document.getElementById('dt-book-kb') || {}).value || '';
+    var depth = (document.getElementById('dt-book-depth') || {}).value || 'standard';
+    if (!intent.trim()) { toast('请输入书的主题', 'error'); return; }
+    var payload = { source_refs: [], user_intent: (intent + (extra ? '\n' + extra : '')).trim(), language: 'zh', fallback_language: 'zh', depth: depth, knowledge_bases: kb ? [kb] : [] };
+    try {
+      toast('正在生成书籍提案…', 'success');
+      var r = await dtApi('/api/books', { method: 'POST', body: JSON.stringify(payload) });
+      closeModal();
+      var b = r.book || r;
+      var proposal = r.proposal || b.proposal || {};
+      openBookProposal(b, proposal);
+    } catch (e) { toast('创建失败：' + e.message, 'error'); }
+  }
+  function openBookProposal(book, proposal) {
+    var id = book.id;
+    var rev = book.revision || 1;
+    var p = proposal || {};
+    modal('BOOK PROPOSAL 书籍提案', '确认标题和范围后开始生成目录。',
+      '<div class="dt-form"><div class="dt-book-title">' + esc(p.title || book.title || '') + '</div><div class="dt-note" style="margin:6px 0 10px;">' + esc(p.description || book.description || '') + '</div>' +
+      '<div class="dt-note">范围：' + esc(p.scope || '') + '</div><div class="dt-note">预计章节：' + (p.estimated_chapters || book.chapter_count || 3) + '</div>' +
+      '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.confirmBookProposal(\'' + esc(id) + '\',' + rev + ')">CONFIRM & BUILD 确认</button></div></div>');
+  }
+  async function openProposalById(id) {
+    try {
+      var r = await dtApi('/api/books/' + encodeURIComponent(id));
+      var b = r.book || r;
+      openBookProposal(b, b.proposal || {});
+    } catch (e) { toast('读取提案失败：' + e.message, 'error'); }
+  }
+  async function confirmBookProposal(id, rev) {
+    try {
+      toast('正在生成目录…', 'success');
+      await dtApi('/api/books/confirm-proposal', { method: 'POST', body: JSON.stringify({ book_id: id, proposal: null, expected_revision: rev }) });
+      toast('目录已生成，正在打开…', 'success');
+      setTimeout(function () { DTWorkspace.openBook(id); }, 1200);
+    } catch (e) { toast('确认失败：' + e.message, 'error'); }
+  }
+  async function openBook(id) {
+    try {
+      var r = await dtApi('/api/books/' + encodeURIComponent(id));
+      var b = r.book || r;
+      var spine = r.spine || b.spine || r;
+      var chapters = (spine && (spine.chapters || spine.nodes)) || [];
+      var allPages = r.pages || [];
+      var pages = allPages;
+      var byChapter = {};
+      allPages.forEach(function (pg) { (byChapter[pg.chapter_id || pg.chapterId || ''] = byChapter[pg.chapter_id || pg.chapterId || ''] || []).push(pg); });
+      chapters.forEach(function (ch) { ch.pages = (ch.pages && ch.pages.length) ? ch.pages : (byChapter[ch.id] || []); });
+      var body = '<div class="dt-note">' + esc(b.description || '') + '</div><div class="dt-actions" style="margin:8px 0;"><span class="dt-pill">' + esc(b.status || 'draft') + '</span><span class="dt-pill">' + (b.chapter_count || chapters.length || 0) + ' CHAPTERS</span><span class="dt-pill">' + (b.page_count || pages.length || 0) + ' PAGES</span></div>';
+      if (chapters.length) {
+        body += '<div class="dt-list">' + chapters.map(function (ch) {
+          var chPages = ch.pages || [];
+          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(ch.title || ch.name || 'Chapter') + '</b><small>' + chPages.length + ' pages</small></div><div class="dt-actions">' + chPages.map(function (pg) { return '<button class="btn btn-sm" onclick="DTWorkspace.openBookPage(\'' + esc(id) + '\',\'' + esc(pg.id || pg.page_id) + '\')">' + esc(pg.title || 'PAGE') + '</button>'; }).join('') + '</div></div>';
+        }).join('') + '</div>';
+      } else if (pages.length) {
+        body += '<div class="dt-list">' + pages.map(function (pg) { return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(pg.title || 'Page') + '</b></div><button class="btn btn-sm" onclick="DTWorkspace.openBookPage(\'' + esc(id) + '\',\'' + esc(pg.id || pg.page_id) + '\')">OPEN</button></div>'; }).join('') + '</div>';
+      } else {
+        body += '<div class="dt-empty">这本书还没有目录/页面。</div>';
+        if (b.status === 'draft' || b.proposal) body += '<div class="dt-actions" style="margin-top:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.openProposalById(\'' + esc(id) + '\')">VIEW PROPOSAL 查看提案</button></div>';
+        else body += '<div class="dt-actions" style="margin-top:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.buildBookSpine(\'' + esc(id) + '\',' + (b.revision || 1) + ')">BUILD 生成目录</button></div>';
+      }
+      body += '<div class="dt-actions" style="margin-top:10px;">' + ((b.page_count || 0) === 0 ? '<button class="btn btn-sm btn-primary" onclick="DTWorkspace.buildBookSpine(\'' + esc(id) + '\',' + (b.revision || 1) + ')">BUILD / COMPILE 编译</button>' : '') + '<button class="btn btn-sm" onclick="DTWorkspace.saveTextToNotebook(\'' + esc(b.title || 'Book') + '\',\'' + esc((b.description || '') + '\n\n状态：' + (b.status || '') + '\n章节：' + (b.chapter_count || 0)) + '\',\'co_writer\')">SAVE TO NOTEBOOK 保存</button><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>';
+      modal(b.title || 'BOOK', '学习书', body);
+    } catch (e) { toast('读取书籍失败：' + e.message, 'error'); }
+  }
+  async function buildBookSpine(id, rev) {
+    try {
+      toast('正在生成目录…', 'success');
+      await dtApi('/api/books/confirm-spine', { method: 'POST', body: JSON.stringify({ book_id: id, spine: null, auto_compile: true, expected_revision: rev }) });
+      toast('目录已生成', 'success');
+      setTimeout(function () { DTWorkspace.openBook(id); }, 1200);
+    } catch (e) { toast('生成目录失败：' + e.message, 'error'); }
+  }
+  async function openBookPage(bookId, pageId) {
+    try {
+      var r = await dtApi('/api/books/' + encodeURIComponent(bookId) + '/pages/' + encodeURIComponent(pageId));
+      var page = r.page || r;
+      var text = page.markdown || page.content || '';
+      if (!text && page.blocks) text = page.blocks.map(function (b) {
+        var pld = b.payload || {};
+        var val = pld.content || pld.markdown || pld.text || (pld.code && pld.code.content) || b.content || b.text || '';
+        if (b.type === 'concept_graph' && pld.chapter_index) val = pld.chapter_index.map(function (x) { return (x.order ? x.order + '. ' : '') + (x.title || ''); }).join('\n');
+        if (!val && b.type === 'quiz') val = pld.question || '';
+        return (b.title ? '## ' + b.title + '\n' : '') + val;
+      }).filter(function (x) { return x.trim(); }).join('\n\n');
+      modal(page.title || 'BOOK PAGE', '阅读页', '<div class="dt-book-page">' + esc(text || '这一页还没有内容。') + '</div><div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.saveTextToNotebook(\'' + esc(page.title || 'Book page') + '\',\'' + esc(text) + '\',\'co_writer\')">SAVE TO NOTEBOOK</button><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>');
+    } catch (e) { toast('读取页面失败：' + e.message, 'error'); }
+  }
+
+  async function reading(content) {
+    var data = await dtApi('/api/reading/workspaces');
+    var list = (data && data.workspaces) || [];
+    content.innerHTML = card('READING 阅读',
+      '<div style="padding:12px 14px;"><div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newReading()">NEW WORKSPACE 新建阅读区</button><button class="btn btn-sm" onclick="DTWorkspace.go(\'reading\')">REFRESH 刷新</button></div>' +
+      (list.length ? '<div class="dt-list" style="margin-top:10px;">' + list.map(function (w) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(w.title || w.name || w.workspace_id) + '</b><small>' + esc(w.description || '') + ' · ' + ((w.tabs || []).length) + ' materials</small></div><button class="btn btn-sm" onclick="DTWorkspace.openReading(\'' + esc(w.workspace_id || w.id) + '\')">OPEN 打开</button></div>';
+      }).join('') + '</div>' : empty('还没有阅读工作区。新建后可以上传材料并创建阅读会话。')) + '</div>');
+  }
+  function newReading() {
+    modal('NEW READING WORKSPACE 新建阅读区', '一个工作区可以放多份材料。',
+      '<div class="dt-form"><input class="dt-input" id="dt-read-title" placeholder="例如：计算机网络教材"><textarea class="dt-textarea" id="dt-read-desc" rows="2" placeholder="说明（可选）"></textarea><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createReading()">CREATE 创建</button></div></div>');
+  }
+  async function createReading() {
+    var title = (document.getElementById('dt-read-title') || {}).value || '';
+    var desc = (document.getElementById('dt-read-desc') || {}).value || '';
+    if (!title.trim()) { toast('请输入标题', 'error'); return; }
+    try { await dtApi('/api/reading/workspaces', { method: 'POST', body: JSON.stringify({ title: title.trim(), description: desc.trim() }) }); closeModal(); toast('阅读区已创建', 'success'); go('reading'); }
+    catch (e) { toast('创建失败：' + e.message, 'error'); }
+  }
+  async function openReading(id) {
+    try {
+      var r = await dtApi('/api/reading/workspaces/' + encodeURIComponent(id));
+      var w = r.workspace || r;
+      var sessions = [];
+      try { var sr = await dtApi('/api/reading/workspaces/' + encodeURIComponent(id) + '/sessions'); sessions = sr.sessions || sr || []; } catch (e) {}
+      var mats = w.tabs || w.materials || [];
+      var body = '<div class="dt-note">' + esc(w.description || '') + '</div><div class="dt-actions" style="margin:8px 0;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.uploadReading(\'' + esc(id) + '\')">UPLOAD MATERIAL 上传材料</button><button class="btn btn-sm" onclick="DTWorkspace.createReadingSession(\'' + esc(id) + '\')">NEW SESSION 新会话</button></div>';
+      body += mats.length ? '<div class="dt-list">' + mats.map(function (m) {
+        var mm = m.material || m;
+        var mid = mm.material_id || mm.id || m.material_id;
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(mm.title || mm.name || mid) + '</b><small>' + esc(mm.status || '') + ' · ' + esc(mm.render_mode || '') + '</small></div><button class="btn btn-sm" onclick="DTWorkspace.openReadingMaterial(\'' + esc(mid) + '\')">OPEN</button></div>';
+      }).join('') + '</div>' : '<div class="dt-empty">还没有材料。上传 PDF/EPUB/TXT 开始阅读。</div>';
+      if (sessions.length) body += '<div class="dt-heading">SESSIONS 阅读会话</div><div class="dt-list">' + sessions.map(function (s) { return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(s.title || s.session_id) + '</b><small>' + fmtDate(s.updated_at) + '</small></div><span class="dt-pill">READING</span></div>'; }).join('') + '</div>';
+      body += '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.saveTextToNotebook(\'' + esc(w.title || 'Reading') + '\',\'' + esc('阅读区：' + (w.title || '') + '\n' + (w.description || '') + '\n材料：' + mats.length) + '\',\'reading\')">SAVE TO NOTEBOOK</button><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>';
+      modal(w.title || 'READING', '阅读工作区', body);
+    } catch (e) { toast('读取阅读区失败：' + e.message, 'error'); }
+  }
+  function uploadReading(id) {
+    var input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,.epub,.txt,.md,.docx';
+    input.onchange = async function () {
+      var f = input.files[0]; if (!f) return;
+      var fd = new FormData(); fd.append('file', f);
+      try {
+        toast('正在上传并解析…', 'success');
+        var resp = await fetch('/dt-api/api/reading/materials', { method: 'POST', body: fd });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        var d = await resp.json();
+        var m = d.material || d;
+        var mid = m.material_id || m.id;
+        await dtApi('/api/reading/workspaces/' + encodeURIComponent(id) + '/materials', { method: 'POST', body: JSON.stringify({ material_id: mid, make_active: true }) });
+        toast('材料已加入', 'success'); openReading(id);
+      } catch (e) { toast('上传失败：' + e.message, 'error'); }
+    };
+    input.click();
+  }
+  async function createReadingSession(id) {
+    try { await dtApi('/api/reading/workspaces/' + encodeURIComponent(id) + '/sessions', { method: 'POST', body: JSON.stringify({ title: 'New reading conversation' }) }); toast('会话已创建', 'success'); openReading(id); }
+    catch (e) { toast('创建会话失败：' + e.message, 'error'); }
+  }
+  async function openReadingMaterial(id) {
+    try {
+      var resp = await fetch('/dt-api/api/reading/materials/' + encodeURIComponent(id) + '/units/1');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var text = await resp.text();
+      var html = text;
+      try { var d = JSON.parse(text); html = d.text || d.html || d.content || d.markdown || text; } catch (e) {}
+      modal('READING MATERIAL', '阅读材料', '<div class="dt-book-page">' + esc(html.slice(0, 12000)) + '</div><div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.saveTextToNotebook(\'Reading material\',\'' + esc(html.slice(0, 3000)) + '\',\'reading\')">SAVE TO NOTEBOOK</button><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>');
+    } catch (e) { toast('读取材料失败：' + e.message, 'error'); }
+  }
+
+  async function practice(content) {
+    var sum = {};
+    var entries = [];
+    try { sum = await dtApi('/api/question-notebook/practice/summary'); } catch (e) {}
+    try { var er = await dtApi('/api/question-notebook/entries?limit=50'); entries = er.items || []; } catch (e) {}
+    content.innerHTML = card('PRACTICE 练习 / 题库',
+      '<div style="padding:12px 14px;"><div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newQuestion()">NEW QUESTION 新建题目</button><button class="btn btn-sm" onclick="DTWorkspace.go(\'practice\')">REFRESH 刷新</button></div>' +
+      '<div class="dt-two" style="margin-top:10px;">' +
+      '<div class="dt-stat"><b>' + (sum.total || 0) + '</b><small>TOTAL 题</small></div><div class="dt-stat"><b>' + (sum.mistakes || 0) + '</b><small>MISTAKES 错题</small></div><div class="dt-stat"><b>' + (sum.due || 0) + '</b><small>DUE 到期</small></div><div class="dt-stat"><b>' + (sum.reviewed_today || 0) + '</b><small>REVIEWED 今日</small></div>' +
+      '</div>' +
+      (entries.length ? '<div class="dt-list" style="margin-top:10px;">' + entries.map(function (q) {
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(q.question || 'Question') + '</b><small>' + esc(q.source || '') + ' · ' + esc(q.result || 'new') + ' · v' + ((q.practice && q.practice.version) || 0) + '</small></div><button class="btn btn-sm" onclick="DTWorkspace.openPracticeQuestion(' + q.id + ')">OPEN 练习</button></div>';
+      }).join('') + '</div>' : empty('题库为空。新建一道题开始练习。')) + '</div>');
+  }
+  function newQuestion() {
+    modal('NEW QUESTION 新建题目', '保存到题库；可立即练习。',
+      '<div class="dt-form"><textarea class="dt-textarea" id="dt-q-text" rows="4" placeholder="题目"></textarea><input class="dt-input" id="dt-q-answer" placeholder="正确答案"><textarea class="dt-textarea" id="dt-q-exp" rows="3" placeholder="解析（可选）"></textarea><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createQuestion()">SAVE 保存</button></div></div>');
+  }
+  async function createQuestion() {
+    var q = (document.getElementById('dt-q-text') || {}).value || '';
+    var a = (document.getElementById('dt-q-answer') || {}).value || '';
+    var e = (document.getElementById('dt-q-exp') || {}).value || '';
+    if (!q.trim()) { toast('题目不能为空', 'error'); return; }
+    try {
+      await dtApi('/api/question-notebook/entries/upsert', { method: 'POST', body: JSON.stringify({ question_id: 'ml_' + Date.now(), question: q.trim(), correct_answer: a.trim(), explanation: e.trim(), origin_type: 'external_import', origin_ref: 'memorylab', source: 'import' }) });
+      closeModal(); toast('题目已保存', 'success'); go('practice');
+    } catch (e2) { toast('保存失败：' + e2.message, 'error'); }
+  }
+  async function openPracticeQuestion(id) {
+    try {
+      var r = await dtApi('/api/question-notebook/practice/questions/' + id);
+      var q = r.entry || r;
+      window.__practice = { id: id, version: (q.practice && q.practice.version) || 0, answer: q.correct_answer || '', explanation: q.explanation || '' };
+      modal('PRACTICE 练习', esc(q.question || ''), '<div class="dt-form"><textarea class="dt-textarea" id="dt-practice-answer" rows="5" placeholder="写下你的答案"></textarea><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button><button class="btn btn-sm" onclick="DTWorkspace.revealPractice()">REVEAL 查看答案</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.checkPractice(' + id + ')">CHECK 检查</button></div><div id="dt-practice-result" class="dt-note"></div></div>');
+    } catch (e) { toast('读取题目失败：' + e.message, 'error'); }
+  }
+  function revealPractice() {
+    var q = window.__practice || {};
+    var el = document.getElementById('dt-practice-result');
+    if (el) el.innerHTML = '<b>答案：</b>' + esc(q.answer || '') + '<br><b>解析：</b>' + esc(q.explanation || '');
+    var review = document.getElementById('dt-practice-review');
+    if (!review) {
+      var holder = document.getElementById('dt-practice-result');
+      if (holder) holder.innerHTML += '<div class="dt-actions" style="margin-top:8px;"><button class="btn btn-sm" onclick="DTWorkspace.reviewPractice(\'again\')">AGAIN</button><button class="btn btn-sm" onclick="DTWorkspace.reviewPractice(\'good\')">GOOD</button><button class="btn btn-sm" onclick="DTWorkspace.reviewPractice(\'easy\')">EASY</button></div>';
+    }
+  }
+  async function checkPractice(id) {
+    var ans = (document.getElementById('dt-practice-answer') || {}).value || '';
+    try {
+      var r = await dtApi('/api/question-notebook/practice/questions/' + id + '/check', { method: 'POST', body: JSON.stringify({ answer: ans }) });
+      var el = document.getElementById('dt-practice-result');
+      if (el) el.innerHTML = '<b>检查结果：</b>' + esc(r.correct === true ? '正确' : (r.correct === false ? '错误' : '已提交，请对照答案')) + '<div class="dt-actions" style="margin-top:8px;"><button class="btn btn-sm" onclick="DTWorkspace.revealPractice()">REVEAL 答案</button></div>';
+    } catch (e) { toast('检查失败：' + e.message, 'error'); }
+  }
+  async function reviewPractice(rating) {
+    var q = window.__practice || {};
+    var ans = (document.getElementById('dt-practice-answer') || {}).value || '';
+    var req = 'mlr_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    try { await dtApi('/api/question-notebook/practice/questions/' + q.id + '/review', { method: 'POST', body: JSON.stringify({ answer: ans, rating: rating, request_id: req, version: q.version || 0 }) }); toast('已记录复习', 'success'); closeModal(); go('practice'); }
+    catch (e) { toast('复习失败：' + e.message, 'error'); }
+  }
+
+  async function openMastery(id) {
+    try {
+      var r = await dtApi('/api/mastery-paths/topics/' + encodeURIComponent(id));
+      var t = r.topic || r;
+      var sessions = [];
+      try { var sr = await dtApi('/api/mastery-paths/topics/' + encodeURIComponent(id) + '/sessions'); sessions = sr.sessions || sr || []; } catch (e) {}
+      var map = t.map || {};
+      var mods = map.modules || t.modules || [];
+      var body = '<div class="dt-note">' + esc(t.metadata && t.metadata.goal || t.goal || '') + '</div><div class="dt-actions" style="margin:8px 0;"><span class="dt-pill">' + (map.counts && map.counts.total || 0) + ' OBJECTIVES</span><span class="dt-pill">' + (sessions.length || 0) + ' SESSIONS</span></div>';
+      if (mods.length) body += '<div class="dt-list">' + mods.map(function (m) { return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(m.name || m.title || 'Module') + '</b><small>' + esc(m.status || '') + '</small></div><span class="dt-pill">MODULE</span></div>'; }).join('') + '</div>';
+      else body += '<div class="dt-empty">还没有模块。点击 STUDY 在导师中开始学习。</div>';
+      if (sessions.length) body += '<div class="dt-heading">SESSIONS</div><div class="dt-list">' + sessions.map(function (s) { return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(s.title || s.session_id) + '</b><small>' + fmtDate(s.updated_at) + '</small></div></div>'; }).join('') + '</div>';
+      body += '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.studyMastery(\'' + esc(id) + '\',\'' + esc(t.name || '') + '\')">STUDY 开始学习</button><button class="btn btn-sm" onclick="DTWorkspace.saveTextToNotebook(\'' + esc(t.name || 'Mastery Path') + '\',\'' + esc('目标：' + ((t.metadata && t.metadata.goal) || '') + '\n模块：' + mods.map(function (m) { return m.name || m.title || ''; }).join(' / ')) + '\',\'question\')">SAVE TO NOTEBOOK</button><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>';
+      modal(t.name || 'MASTERY PATH', '掌握路径', body);
+    } catch (e) { toast('读取路径失败：' + e.message, 'error'); }
+  }
+  function studyMastery(id, name) {
+    closeModal();
+    if (state.chat && state.chat.socket) { try { state.chat.socket.close(); } catch (e) {} }
+    state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '', mode: 'mastery_path', masteryPathId: id };
+    location.hash = '#dt-tutor';
+    setTimeout(function () {
+      var input = document.getElementById('dt-chat-text');
+      if (input) { input.value = '开始学习「' + (name || '') + '」，请先给我一个诊断问题。'; input.focus(); }
+    }, 250);
   }
 
   async function knowledge(content) {
@@ -347,10 +740,47 @@
         (kbs.length ? '<div class="dt-list" style="margin-top:10px;">' + kbs.map(function (k) {
           var name = k.name || k.kb_name || k.id;
           return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(name) + '</b><small>' + ((k.statistics && (k.statistics.raw_documents || k.statistics.raw_documents === 0)) ? k.statistics.raw_documents : (k.file_count || 0)) + ' files · ' + esc((k.statistics && k.statistics.rag_provider) || 'default') + '</small></div>' +
-            '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.uploadKb(\'' + esc(name) + '\')">UPLOAD</button><button class="btn btn-sm btn-danger" onclick="DTWorkspace.deleteKb(\'' + esc(name) + '\')">DEL</button></div></div>';
+            '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.openKb(\'' + esc(name) + '\')">OPEN 详情</button><button class="btn btn-sm" onclick="DTWorkspace.uploadKb(\'' + esc(name) + '\')">UPLOAD</button><button class="btn btn-sm btn-danger" onclick="DTWorkspace.deleteKb(\'' + esc(name) + '\')">DEL</button></div></div>';
         }).join('') + '</div>' : empty('还没有知识库。上传 PDF/Word/PPT 后可在导师中引用。')) +
       '</div>');
   }
+  async function openKb(name) {
+    try {
+      var rs = await Promise.allSettled([
+        dtApi('/api/knowledge-bases/' + encodeURIComponent(name)),
+        dtApi('/api/knowledge-bases/' + encodeURIComponent(name) + '/progress'),
+        dtApi('/api/knowledge-bases/' + encodeURIComponent(name) + '/indexing-readiness')
+      ]);
+      function val(i, d) { return rs[i].status === 'fulfilled' ? rs[i].value : d; }
+      var info = val(0, {}); var prog = val(1, {}); var ready = val(2, {});
+      var files = [];
+      try { var fr = await dtApi('/api/knowledge-bases/' + encodeURIComponent(name) + '/files'); files = fr.files || fr.items || (Array.isArray(fr) ? fr : []); } catch (e) {}
+      var st = info.statistics || {};
+      var body = '<div class="dt-actions" style="margin-bottom:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.reindexKb(\'' + esc(name) + '\')">REINDEX 重建索引</button><button class="btn btn-sm" onclick="DTWorkspace.uploadKb(\'' + esc(name) + '\')">UPLOAD 上传</button></div>';
+      body += '<div class="dt-note">状态：' + esc(info.status || st.status || ready.status || 'ready') + ' · 文档：' + (st.raw_documents != null ? st.raw_documents : files.length) + ' · RAG：' + esc(st.rag_provider || 'default') + (st.rag_initialized === false ? ' · 未初始化' : '') + '</div>';
+      if (st.needs_reindex) body += '<div class="dt-note" style="color:var(--accent);">索引需要重建</div>';
+      if (prog && (prog.status || prog.progress != null)) body += '<div class="dt-note">任务：' + esc(prog.status || '') + ' ' + esc(prog.message || '') + '</div>';
+      body += files.length ? '<div class="dt-list" style="margin-top:8px;">' + files.map(function (x) {
+        var fn = x.filename || x.name || x.file || 'file';
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(fn) + '</b><small>' + esc(x.status || x.index_status || 'indexed') + ' · ' + (x.size || x.size_bytes || 0) + ' bytes</small></div><button class="btn btn-sm" onclick="DTWorkspace.previewKbFile(\'' + esc(name) + '\',\'' + esc(fn) + '\')">PREVIEW</button></div>';
+      }).join('') + '</div>' : '<div class="dt-empty">还没有文档。上传 PDF/Word/PPT 后这里显示索引状态。</div>';
+      body += '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>';
+      modal('KNOWLEDGE BASE · ' + name, '文档 · 索引 · 重建', body);
+    } catch (e) { toast('读取知识库失败：' + e.message, 'error'); }
+  }
+  async function reindexKb(name) {
+    try { await dtApi('/api/knowledge-bases/' + encodeURIComponent(name) + '/reindex', { method: 'POST', body: '{}' }); toast('已开始重建索引', 'success'); setTimeout(function () { openKb(name); }, 1000); }
+    catch (e) { toast('重建失败：' + e.message, 'error'); }
+  }
+  async function previewKbFile(name, filename) {
+    try {
+      var resp = await fetch('/dt-api/api/knowledge-bases/' + encodeURIComponent(name) + '/file-preview-text/' + encodeURIComponent(filename));
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var text = await resp.text();
+      modal('FILE · ' + filename, '索引文本预览', '<div class="dt-book-page">' + esc(text.slice(0, 20000)) + '</div><div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.openKb(\'' + esc(name) + '\')">BACK</button></div>');
+    } catch (e) { toast('预览失败：' + e.message, 'error'); }
+  }
+
   function modal(title, sub, body) {
     var old = document.getElementById('dt-modal-mask');
     if (old) old.remove();
@@ -577,11 +1007,49 @@
           var name = p.name || p.display_name || 'Partner';
           var id = p.partner_id || p.id;
           return '<div class="dt-row"><div class="dt-row-main"><b>' + esc((p.emoji ? p.emoji + ' ' : '') + name) + '</b><small>' + esc(p.description || '') + (p.model ? ' · ' + esc(p.model) : '') + (p.running ? ' · running' : '') + '</small></div>' +
-            '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.editPartner(\'' + esc(id) + '\')">EDIT 设置</button><button class="btn btn-sm btn-danger" onclick="DTWorkspace.deletePartner(\'' + esc(id) + '\')">DEL</button></div></div>';
+            '<div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.openPartnerChat(\'' + esc(id) + '\',\'' + esc(name) + '\')">CHAT 聊天</button><button class="btn btn-sm" onclick="DTWorkspace.editPartner(\'' + esc(id) + '\')">EDIT 设置</button><button class="btn btn-sm btn-danger" onclick="DTWorkspace.deletePartner(\'' + esc(id) + '\')">DEL</button></div></div>';
         }).join('') : empty('还没有伙伴。点 NEW PARTNER 创建第一个常驻智能体。')) + '</div>' +
         (groups.length ? '<div class="dt-note" style="margin-top:10px;">PARTNER GROUPS: ' + groups.map(function(g){return esc(g.name || g.id);}).join(' · ') + '</div>' : '') +
       '</div>');
   }
+  function openPartnerChat(id, name) {
+    window.__partnerChat = { id: id, name: name, sessionId: null, messages: [] };
+    modal('PARTNER CHAT · ' + (name || 'Partner'), '与伙伴独立对话；回答可直接保存到 Notebook。',
+      '<div class="dt-partner-log" id="dt-partner-log"><div class="dt-empty">发第一条消息开始。</div></div>' +
+      '<div class="dt-chat-input" style="margin-top:8px;"><input class="dt-input" id="dt-partner-input" placeholder="和伙伴说点什么…" autocomplete="off"><button class="btn btn-primary" onclick="DTWorkspace.sendPartnerChat()">SEND 发送</button></div>' +
+      '<div class="dt-actions" style="margin-top:8px;"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>');
+    var input = document.getElementById('dt-partner-input');
+    if (input) input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendPartnerChat(); } });
+  }
+  function paintPartnerChat() {
+    var box = document.getElementById('dt-partner-log');
+    var c = window.__partnerChat;
+    if (!box || !c) return;
+    box.innerHTML = c.messages.length ? c.messages.map(function (m) {
+      var actions = m.role === 'assistant' ? '<div class="dt-msg-actions"><button class="dt-mini-btn" onclick="DTWorkspace.saveTextToNotebook(\'' + esc((m.text || '').slice(0, 60)) + '\',\'' + esc(m.text || '') + '\',\'chat\')">SAVE TO NOTEBOOK</button></div>' : '';
+      return '<div class="dt-msg ' + (m.role === 'user' ? 'user' : '') + '">' + esc(m.text) + actions + '</div>';
+    }).join('') : '<div class="dt-empty">发第一条消息开始。</div>';
+    box.scrollTop = box.scrollHeight;
+  }
+  async function sendPartnerChat() {
+    var c = window.__partnerChat;
+    var input = document.getElementById('dt-partner-input');
+    var text = input ? input.value.trim() : '';
+    if (!c || !text) return;
+    if (input) input.value = '';
+    c.messages.push({ role: 'user', text: text }); paintPartnerChat();
+    c.messages.push({ role: 'assistant', text: '正在思考…' }); paintPartnerChat();
+    try {
+      var r = await dtApi('/api/partners/' + encodeURIComponent(c.id) + '/chat', { method: 'POST', body: JSON.stringify({ content: text, session_id: c.sessionId }) });
+      c.sessionId = r.session_id || c.sessionId;
+      c.messages[c.messages.length - 1] = { role: 'assistant', text: r.content || '（没有返回内容）' };
+      paintPartnerChat();
+    } catch (e) {
+      c.messages[c.messages.length - 1] = { role: 'assistant', text: '请求失败：' + e.message };
+      paintPartnerChat();
+    }
+  }
+
   function newPartner() {
     modal('NEW PARTNER 新建伙伴', '创建常驻智能体；之后可编辑人格、模型、工具和资源。',
       '<div class="dt-form"><input class="dt-input" id="dt-pt-name" placeholder="伙伴名称"><textarea class="dt-textarea" id="dt-pt-desc" rows="2" placeholder="它擅长什么 / 描述"></textarea><div style="display:flex;gap:8px;"><input class="dt-input" id="dt-pt-emoji" placeholder="Emoji（可选）" style="max-width:110px;"><input class="dt-input" id="dt-pt-color" placeholder="#e60012" style="max-width:130px;"><select class="dt-select" id="dt-pt-lang" style="max-width:160px;"><option value="Chinese">中文</option><option value="English">English</option></select></div>' +
@@ -832,12 +1300,19 @@
   window.DTWorkspace = {
     render: render, renderGroup: renderGroup, renderSection: renderSection, navigate: navigate, go: go, renderTutor: tutor, closeModal: closeModal,
     newKb: newKb, createKb: createKb, uploadKb: uploadKb, deleteKb: deleteKb,
+    openSessionHistory: openSessionHistory, openRecycleBin: openRecycleBin, openSession: openSession, renameSession: renameSession, saveSessionTitle: saveSessionTitle, deleteSession: deleteSession, restoreSession: restoreSession,
+    saveChatToNotebook: saveChatToNotebook, confirmSaveChat: confirmSaveChat, saveTextToNotebook: saveTextToNotebook, confirmSaveText: confirmSaveText,
     newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
     newNotebookRecord: newNotebookRecord, createNotebookRecord: createNotebookRecord, deleteNotebookRecord: deleteNotebookRecord, exportNotebook: exportNotebook,
     sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
     newEvent: newEvent, createEvent: createEvent, newTask: newTask, createTask: createTask,
-    newMastery: newMastery, createMastery: createMastery,
+    newMastery: newMastery, createMastery: createMastery, openMastery: openMastery, studyMastery: studyMastery,
+    newBook: newBook, createBook: createBook, openBook: openBook, openBookProposal: openBookProposal, openProposalById: openProposalById, confirmBookProposal: confirmBookProposal, buildBookSpine: buildBookSpine, openBookPage: openBookPage,
+    newReading: newReading, createReading: createReading, openReading: openReading, uploadReading: uploadReading, createReadingSession: createReadingSession, openReadingMaterial: openReadingMaterial,
+    newQuestion: newQuestion, createQuestion: createQuestion, openPracticeQuestion: openPracticeQuestion, revealPractice: revealPractice, checkPractice: checkPractice, reviewPractice: reviewPractice,
     newPartner: newPartner, createPartner: createPartner, editPartner: editPartner, savePartner: savePartner, deletePartner: deletePartner,
+    openPartnerChat: openPartnerChat, sendPartnerChat: sendPartnerChat,
+    openKb: openKb, reindexKb: reindexKb, previewKbFile: previewKbFile,
     mountModelConfig: mountModelConfig, editModel: editModel, saveModel: saveModel
   };
 })();
