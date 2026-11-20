@@ -764,6 +764,7 @@
         '<div class="dt-note" id="dt-ingest-status"></div>' +
         '<div class="dt-note" id="dt-ingest-embed"></div>' +
         '<div id="dt-ingest-count" class="dt-note"></div>' +
+        '<div id="dt-ingest-skip" class="dt-ingest-skip"></div>' +
         '<div id="dt-ingest-list"></div>' +
       '</div>');
     var drop = document.getElementById('dt-ingest-drop');
@@ -788,7 +789,7 @@
       var e = (st && st.embeddings) || {};
       ingestState.embeddingReady = e.status === 'configured';
       if (!ingestState.embeddingReady) {
-        el.innerHTML = '<span style="color:var(--accent);">EMBEDDING 未配置：文件仍会存入 Knowledge，但不会建立向量索引。配置 Embedding 后在 Knowledge 中 REINDEX。</span>';
+        el.innerHTML = '<span style="color:var(--accent);">EMBEDDING 未配置：文件仍会存入 Knowledge，但不会建立向量索引。当前 P5 只配置了聊天模型，Embedding 是独立模型；接入后在 KNOWLEDGE → OPEN → REINDEX。</span>';
       } else {
         el.textContent = 'EMBEDDING 已配置：知识库会自动建立索引。';
       }
@@ -838,21 +839,24 @@
   function ingestSupported(name) {
     return INGEST_EXT.test(name || '');
   }
-  function ingestSkip(name, rel) {
+  function ingestSkipReason(name, rel) {
     var low = String(name || '').toLowerCase();
-    if (!ingestSupported(name)) return true;
-    if (low === '.ds_store' || low.startsWith('~$') || low.endsWith('.tmp')) return true;
-    return /(^|\/)(\.git|node_modules|__MACOSX|\.cache)(\/|$)/i.test(rel || '');
+    if (!ingestSupported(name)) return '不支持的格式 .' + ((name.split('.').pop() || 'unknown').toLowerCase());
+    if (low === '.ds_store' || low.startsWith('~$') || low.endsWith('.tmp')) return '系统/临时文件';
+    if (/(^|\/)(\.git|node_modules|__MACOSX|\.cache)(\/|$)/i.test(rel || '')) return '系统/缓存目录';
+    return '';
   }
   async function ingestAddFiles(files, prefix) {
     var added = 0, skipped = 0;
+    var skipInfo = [];
     for (var i = 0; i < files.length; i++) {
       var f = files[i];
       var rel = prefix ? prefix + '/' + f.name : (f.webkitRelativePath || f.name);
-      if (ingestSkip(f.name, rel)) { skipped++; continue; }
-      if (f.size > 200 * 1024 * 1024) { skipped++; continue; }
-      if (ingestState.files.some(function (x) { return x.relPath === rel && x.size === f.size; })) { skipped++; continue; }
-      if (ingestState.files.length >= 200) { skipped++; break; }
+      var reason = ingestSkipReason(f.name, rel);
+      if (reason) { skipped++; skipInfo.push({ name: rel, reason: reason }); continue; }
+      if (f.size > 200 * 1024 * 1024) { skipped++; skipInfo.push({ name: rel, reason: '超过 200MB' }); continue; }
+      if (ingestState.files.some(function (x) { return x.relPath === rel && x.size === f.size; })) { skipped++; skipInfo.push({ name: rel, reason: '重复文件（已在列表）' }); continue; }
+      if (ingestState.files.length >= 200) { skipped++; skipInfo.push({ name: rel, reason: '超过 200 个文件上限' }); break; }
       var ext = (f.name.split('.').pop() || '').toLowerCase();
       var excerpt = '';
       if (/^(md|markdown|txt)$/i.test(ext)) {
@@ -865,8 +869,9 @@
       });
       added++;
     }
-    if (added) setIngestStatus('已加入 ' + added + ' 个文件' + (skipped ? '，跳过 ' + skipped + ' 个不支持/重复文件' : ''), false);
-    else if (skipped) setIngestStatus('没有可导入的新文件（跳过 ' + skipped + ' 个）', true);
+    ingestState.skipped = skipInfo;
+    if (added) setIngestStatus('已加入 ' + added + ' 个文件' + (skipped ? '，跳过 ' + skipped + ' 个（原因见下）' : ''), false);
+    else if (skipped) setIngestStatus('没有可导入的新文件，跳过 ' + skipped + ' 个（原因见下）', true);
     renderIngestList();
   }
   function setIngestStatus(text, error) {
@@ -885,7 +890,7 @@
   }
   function clearIngest() {
     if (ingestState.busy) return;
-    ingestState.files = []; ingestState.categories = []; ingestState.last = null;
+    ingestState.files = []; ingestState.categories = []; ingestState.last = null; ingestState.skipped = [];
     setIngestStatus('', false); renderIngestList();
   }
   function renderIngestList() {
@@ -896,6 +901,10 @@
       var cats = {};
       ingestState.files.forEach(function (f) { cats[f.category || '未分类'] = 1; });
       count.textContent = ingestState.files.length + ' 个文件 · ' + Object.keys(cats).length + ' 个分类' + (ingestState.last ? ' · 上次：' + ingestState.last : '');
+    }
+    var skipBox = document.getElementById('dt-ingest-skip');
+    if (skipBox) {
+      skipBox.innerHTML = (ingestState.skipped || []).length ? '<b>SKIPPED 跳过：</b>' + ingestState.skipped.map(function (s) { return '<div>' + esc(s.name) + ' — ' + esc(s.reason) + '</div>'; }).join('') : '';
     }
     if (!ingestState.files.length) {
       list.innerHTML = '<div class="dt-empty">还没有选择文件。点 SELECT FOLDER 从文件管理器选择整个文件夹。</div>';
