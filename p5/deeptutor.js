@@ -1194,6 +1194,8 @@
     { key: 'openai', label: 'OpenAI（付费）', binding: 'openai', base: 'https://api.openai.com/v1/embeddings', model: 'text-embedding-3-small', dim: '1536', note: '稳定，按量付费；国内访问可能需要网络代理。' },
     { key: 'zhipu', label: '智谱 BigModel（国内）', binding: 'custom', base: 'https://open.bigmodel.cn/api/paas/v4/embeddings', model: 'embedding-3', dim: '2048', note: '国内 API；免费额度/价格以官网为准。' },
     { key: 'ollama', label: 'Ollama（本地免费）', binding: 'ollama', base: 'http://localhost:11434/api/embed', model: 'bge-m3', dim: '1024', note: '完全离线；先安装 Ollama 并执行 ollama pull bge-m3。' },
+    { key: 'ollama-light', label: 'Ollama 轻量（nomic，推荐低配）', binding: 'ollama', base: 'http://localhost:11434/api/embed', model: 'nomic-embed-text', dim: '768', note: '约 270MB，适合 16GB 内存/核显；先执行 ollama pull nomic-embed-text。' },
+    { key: 'lmstudio-small', label: 'LM Studio 轻量（bge-small-zh）', binding: 'vllm', base: 'http://localhost:1234/v1/embeddings', model: 'bge-small-zh-v1.5', dim: '512', note: '约 100MB，中文轻量；在 LM Studio 加载 bge-small-zh-v1.5。' },
     { key: 'lmstudio', label: 'LM Studio（本地免费）', binding: 'vllm', base: 'http://localhost:1234/v1/embeddings', model: 'nomic-embed-text-v1.5', dim: '768', note: '完全离线；在 LM Studio 里加载 embedding 模型并启动本地服务。' },
     { key: 'custom', label: '自定义 OpenAI 兼容接口', binding: 'custom', base: '', model: '', dim: '1024', note: '任何兼容 POST /embeddings 的服务；地址要填完整接口 URL。' }
   ];
