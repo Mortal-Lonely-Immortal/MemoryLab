@@ -789,7 +789,7 @@
       var e = (st && st.embeddings) || {};
       ingestState.embeddingReady = e.status === 'configured';
       if (!ingestState.embeddingReady) {
-        el.innerHTML = '<span style="color:var(--accent);">EMBEDDING 未配置：文件仍会存入 Knowledge，但不会建立向量索引。DeepSeek 聊天 Key 不能代替 Embedding；需要单独的向量模型。当前 P5 只配置了聊天模型，接入后在 KNOWLEDGE → OPEN → REINDEX。</span>';
+        el.innerHTML = '<span style="color:var(--accent);">EMBEDDING 未配置：文件仍会存入 Knowledge，但不会建立向量索引。DeepSeek 聊天 Key 不能代替 Embedding；需要单独的向量模型。 <button class="btn btn-sm" onclick="DTWorkspace.openEmbeddingSettings()">CONFIGURE 配置</button></span>';
       } else {
         el.textContent = 'EMBEDDING 已配置：知识库会自动建立索引。';
       }
@@ -1185,6 +1185,185 @@
       var text = await resp.text();
       modal('FILE · ' + filename, '索引文本预览', '<div class="dt-book-page">' + esc(text.slice(0, 20000)) + '</div><div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.openKb(\'' + esc(name) + '\')">BACK</button></div>');
     } catch (e) { toast('预览失败：' + e.message, 'error'); }
+  }
+
+
+  var EMBED_PRESETS = [
+    { key: 'siliconflow', label: 'SiliconFlow（国内，推荐）', binding: 'siliconflow', base: 'https://api.siliconflow.cn/v1/embeddings', model: 'BAAI/bge-m3', dim: '1024', note: '国内访问方便，注册通常有免费额度；以官网当期政策为准。' },
+    { key: 'jina', label: 'Jina AI（海外，有免费额度）', binding: 'jina', base: 'https://api.jina.ai/v1/embeddings', model: 'jina-embeddings-v3', dim: '1024', note: '多语言，注册有免费额度；海外网络更稳。' },
+    { key: 'openai', label: 'OpenAI（付费）', binding: 'openai', base: 'https://api.openai.com/v1/embeddings', model: 'text-embedding-3-small', dim: '1536', note: '稳定，按量付费；国内访问可能需要网络代理。' },
+    { key: 'zhipu', label: '智谱 BigModel（国内）', binding: 'custom', base: 'https://open.bigmodel.cn/api/paas/v4/embeddings', model: 'embedding-3', dim: '2048', note: '国内 API；免费额度/价格以官网为准。' },
+    { key: 'ollama', label: 'Ollama（本地免费）', binding: 'ollama', base: 'http://localhost:11434/api/embed', model: 'bge-m3', dim: '1024', note: '完全离线；先安装 Ollama 并执行 ollama pull bge-m3。' },
+    { key: 'lmstudio', label: 'LM Studio（本地免费）', binding: 'vllm', base: 'http://localhost:1234/v1/embeddings', model: 'nomic-embed-text-v1.5', dim: '768', note: '完全离线；在 LM Studio 里加载 embedding 模型并启动本地服务。' },
+    { key: 'custom', label: '自定义 OpenAI 兼容接口', binding: 'custom', base: '', model: '', dim: '1024', note: '任何兼容 POST /embeddings 的服务；地址要填完整接口 URL。' }
+  ];
+
+  function embeddingPreset(key) {
+    return EMBED_PRESETS.filter(function (x) { return x.key === key; })[0] || EMBED_PRESETS[0];
+  }
+  async function mountEmbeddingConfig(el) {
+    if (!el) return;
+    var status = {};
+    try { status = await dtApi('/api/system/status'); } catch (e) {}
+    var settings = {};
+    try { settings = await dtApi('/api/settings'); } catch (e) {}
+    var svc = (settings.catalog && settings.catalog.services && settings.catalog.services.embedding) || {};
+    var profile = (svc.profiles || [])[0] || null;
+    var model = profile && profile.models && profile.models[0] ? profile.models[0] : null;
+    var active = status.embeddings || {};
+    var isConfigured = active.status === 'configured';
+    window.__embeddingState = { profile: profile, model: model, settings: settings };
+    var presetOpts = EMBED_PRESETS.map(function (x) { return '<option value="' + x.key + '">' + esc(x.label) + '</option>'; }).join('');
+    el.innerHTML =
+      '<div style="padding:12px 14px;">' +
+        '<div class="dt-embedding-status ' + (isConfigured ? 'is-ok' : 'is-warn') + '">' +
+          (isConfigured ? '已配置：' + esc(active.model || (model && model.model) || '') : '未配置：资料能进知识库，但 AI 搜不到内容') +
+        '</div>' +
+        '<p class="dt-embedding-intro">Embedding 是“把书变成可搜索目录”的模型。聊天模型负责回答，Embedding 负责找资料；两者不是同一个 Key，DeepSeek 聊天 Key 不能填在这里。</p>' +
+        '<div class="dt-form">' +
+          '<label class="dt-field-label">推荐服务（自动填地址/模型/维度）</label>' +
+          '<select class="dt-select" id="dt-emb-preset" onchange="DTWorkspace.applyEmbeddingPreset(this.value)"><option value="">— 选择推荐服务 —</option>' + presetOpts + '</select>' +
+          '<div class="dt-emb-grid">' +
+            '<div><label class="dt-field-label">Base URL 接口地址</label><input class="dt-input" id="dt-emb-base" value="' + esc(profile ? profile.base_url : '') + '" placeholder="https://api.siliconflow.cn/v1/embeddings"></div>' +
+            '<div><label class="dt-field-label">Model 模型名</label><input class="dt-input" id="dt-emb-model" value="' + esc(model ? model.model : '') + '" placeholder="BAAI/bge-m3"></div>' +
+          '</div>' +
+          '<div class="dt-emb-grid">' +
+            '<div><label class="dt-field-label">API Key 密钥</label><input class="dt-input" id="dt-emb-key" type="password" value="' + esc(profile && profile.api_key ? profile.api_key : '') + '" placeholder="本地 Ollama 可留空"></div>' +
+            '<div><label class="dt-field-label">Dimension 向量维度</label><input class="dt-input" id="dt-emb-dim" value="' + esc(model && model.dimension ? model.dimension : '1024') + '" placeholder="1024"></div>' +
+          '</div>' +
+          '<input type="hidden" id="dt-emb-binding" value="' + esc(profile ? (profile.binding || 'custom') : 'custom') + '">' +
+          '<div class="dt-embedding-note" id="dt-emb-note">' + (profile ? '当前已保存一个 Embedding 配置。' : '第一次使用请从上方选择一个服务，再填 Key。') + '</div>' +
+          '<div class="dt-actions">' +
+            '<button class="btn btn-sm btn-primary" onclick="DTWorkspace.embeddingOneClick()">SAVE + TEST + REBUILD 一键保存并重建</button>' +
+            '<button class="btn btn-sm" onclick="DTWorkspace.saveEmbeddingConfig(false)">SAVE 仅保存</button>' +
+            '<button class="btn btn-sm" onclick="DTWorkspace.testEmbeddingConnection()">TEST 测试连接</button>' +
+            '<button class="btn btn-sm" onclick="DTWorkspace.rebuildAllIndexes()">REINDEX ALL 重建全部索引</button>' +
+          '</div>' +
+          '<div class="dt-note" id="dt-emb-status"></div>' +
+        '</div>' +
+        '<div class="dt-emb-explain"><b>小白说明：</b>Base URL 是服务地址；Model 是“做目录”的模型；Key 是钥匙；Dimension 是目录向量的长度。选推荐服务会自动填好，只有 Key 需要自己申请。DeepSeek 没有 Embedding 接口，所以不能只用 DeepSeek 一个 Key。</div>' +
+        '<div class="dt-emb-presets"><b>可选服务</b>' + EMBED_PRESETS.map(function (x) {
+          return '<div class="dt-emb-preset"><strong>' + esc(x.label) + '</strong><span>' + esc(x.note) + '</span><code>' + esc(x.base || '自定义接口') + '</code></div>';
+        }).join('') + '</div>' +
+      '</div>';
+  }
+  function applyEmbeddingPreset(key) {
+    var p = embeddingPreset(key);
+    if (!key) return;
+    var set = function (id, v) { var el = document.getElementById(id); if (el) el.value = v; };
+    set('dt-emb-base', p.base);
+    set('dt-emb-model', p.model);
+    set('dt-emb-dim', p.dim);
+    set('dt-emb-binding', p.binding);
+    var note = document.getElementById('dt-emb-note');
+    if (note) note.textContent = p.note;
+  }
+  function embeddingForm() {
+    var get = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    return {
+      binding: get('dt-emb-binding') || 'custom',
+      base: get('dt-emb-base'),
+      model: get('dt-emb-model'),
+      key: get('dt-emb-key'),
+      dim: get('dt-emb-dim')
+    };
+  }
+  function embeddingApiKey(form) {
+    var st = window.__embeddingState || {};
+    if (form.key) return form.key;
+    if (st.profile && st.profile.api_key) return st.profile.api_key;
+    return '';
+  }
+  async function saveEmbeddingConfig(showToast) {
+    var f = embeddingForm();
+    if (!f.base || !f.model) { toast('Base URL 和 Model 不能为空', 'error'); return false; }
+    if (!f.dim || Number(f.dim) <= 0) { toast('请填写向量维度，例如 1024', 'error'); return false; }
+    var key = embeddingApiKey(f);
+    var local = /^(ollama|vllm|lemonade)$/.test(f.binding) || /localhost|127\.0\.0\.1/.test(f.base);
+    if (!key && !local) { toast('非本地服务需要 API Key', 'error'); return false; }
+    var st = window.__embeddingState || {};
+    var existing = st.profile || {};
+    var profileId = existing.id || 'embedding-profile-memorylab';
+    var modelId = (st.model && st.model.id) || 'embedding-model-memorylab';
+    var profile = {
+      id: profileId,
+      name: existing.name || 'MemoryLab Embedding',
+      binding: f.binding,
+      base_url: f.base,
+      api_key: key || '***',
+      api_version: '',
+      extra_headers: {},
+      models: [{ id: modelId, name: f.model, model: f.model, dimension: String(f.dim) }]
+    };
+    try {
+      await dtApi('/api/settings/apply/provider', { method: 'POST', body: JSON.stringify({ service: 'embedding', profile: profile, active_model_id: modelId, activate: true }) });
+      window.__embeddingState = { profile: profile, model: profile.models[0] };
+      if (showToast !== false) toast('Embedding 配置已保存', 'success');
+      await mountEmbeddingConfig(document.getElementById('dt-embedding-body'));
+      return true;
+    } catch (e) {
+      toast('保存 Embedding 失败：' + e.message, 'error');
+      return false;
+    }
+  }
+  async function testEmbeddingConnection() {
+    var ok = await saveEmbeddingConfig(false);
+    if (!ok) return false;
+    setEmbStatus('正在测试 Embedding 连接…', false);
+    try {
+      var r = await dtApi('/api/system/test/embeddings', { method: 'POST', body: '{}' });
+      if (r && r.success) {
+        setEmbStatus('连接成功：' + (r.message || 'Embedding OK') + (r.response_time_ms ? ' · ' + r.response_time_ms + 'ms' : ''), false);
+        toast('Embedding 连接成功', 'success');
+        return true;
+      }
+      setEmbStatus('连接失败：' + ((r && (r.error || r.message)) || '未知错误'), true);
+      return false;
+    } catch (e) {
+      setEmbStatus('连接失败：' + e.message, true);
+      return false;
+    }
+  }
+  function setEmbStatus(text, error) {
+    var el = document.getElementById('dt-emb-status');
+    if (el) { el.textContent = text || ''; el.style.color = error ? 'var(--accent)' : ''; }
+  }
+  async function rebuildAllIndexes() {
+    setEmbStatus('正在读取知识库列表…', false);
+    try {
+      var list = await dtApi('/api/knowledge-bases');
+      list = Array.isArray(list) ? list : [];
+      if (!list.length) { setEmbStatus('没有知识库可重建。先导入资料。', true); return; }
+      var ok = 0, fail = 0;
+      for (var i = 0; i < list.length; i++) {
+        var name = list[i].name || list[i].kb_name;
+        setEmbStatus('正在重建 ' + (i + 1) + '/' + list.length + '：' + name + ' …', false);
+        try {
+          var f = embeddingForm();
+          await dtApi('/api/knowledge-bases/' + encodeURIComponent(name) + '/reindex', { method: 'POST', body: JSON.stringify({ embedding_model: f.model }) });
+          ok++;
+        } catch (e) { fail++; }
+      }
+      setEmbStatus('重建完成：' + ok + ' 个成功' + (fail ? '，' + fail + ' 个失败' : '') + '。', fail > 0);
+      toast('知识库索引重建完成：' + ok + ' 成功 / ' + fail + ' 失败', fail ? 'error' : 'success');
+    } catch (e) { setEmbStatus('重建失败：' + e.message, true); }
+  }
+  async function embeddingOneClick() {
+    setEmbStatus('步骤 1/3：保存配置…', false);
+    var ok = await saveEmbeddingConfig(false);
+    if (!ok) return;
+    setEmbStatus('步骤 2/3：测试连接…', false);
+    var tested = await testEmbeddingConnection();
+    if (!tested) { setEmbStatus('连接未通过，已停止重建。请检查 Base URL / 模型名 / Key。', true); return; }
+    setEmbStatus('步骤 3/3：重建全部知识库索引…', false);
+    await rebuildAllIndexes();
+  }
+  function openEmbeddingSettings() {
+    if (window.loadPage) loadPage('settings');
+    setTimeout(function () {
+      var el = document.getElementById('dt-embedding-card');
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 500);
   }
 
   function modal(title, sub, body) {
@@ -1720,6 +1899,7 @@
     openPartnerChat: openPartnerChat, sendPartnerChat: sendPartnerChat,
     pickIngestFolder: pickIngestFolder, pickIngestFiles: pickIngestFiles, ingestInputChanged: ingestInputChanged, classifyIngest: classifyIngest, importIngest: importIngest, clearIngest: clearIngest, setIngestCategory: setIngestCategory, openDocsFromIngest: openDocsFromIngest,
     openKb: openKb, reindexKb: reindexKb, previewKbFile: previewKbFile,
+    mountEmbeddingConfig: mountEmbeddingConfig, applyEmbeddingPreset: applyEmbeddingPreset, saveEmbeddingConfig: saveEmbeddingConfig, testEmbeddingConnection: testEmbeddingConnection, rebuildAllIndexes: rebuildAllIndexes, embeddingOneClick: embeddingOneClick, openEmbeddingSettings: openEmbeddingSettings,
     mountModelConfig: mountModelConfig, editModel: editModel, saveModel: saveModel
   };
 })();

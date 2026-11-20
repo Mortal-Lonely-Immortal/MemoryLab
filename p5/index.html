@@ -2474,7 +2474,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
 </style>
 <link rel="stylesheet" href="teach.css">
 <link rel="stylesheet" href="archive3d.css?v=8">
-<link rel="stylesheet" href="deeptutor.css?v=20261120g">
+<link rel="stylesheet" href="deeptutor.css?v=20261120h">
 <link rel="modulepreload" href="./archive3d.bundle.js?v=24">
 </head>
 <body>
@@ -2547,7 +2547,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
 
 <script src="/vendor/echarts.min.js"></script>
 <script src="teach.js"></script>
-<script src="deeptutor.js?v=20261120g"></script>
+<script src="deeptutor.js?v=20261120h"></script>
 <script>
 /* ================================================================
  * DeepTutor — P5 Pentagram UI (r/R=0.45饱满比例, 3层结构)
@@ -3336,9 +3336,13 @@ async function renderSettings(main) {
       '<div class="p5-card" style="margin-top:14px;"><div class="p5-card-header">DEEPTUTOR MODEL 全科模型</div>' +
         '<div id="dt-model-body" style="padding:12px 14px;"></div>' +
         '<p class="settings-note" style="padding:0 14px 12px;">这是 DeepTutor 全科导师使用的模型，与上面的 Memory Lab 教材接口分开配置。</p>' +
+      '</div>' +
+      '<div class="p5-card" id="dt-embedding-card" style="margin-top:14px;"><div class="p5-card-header">EMBEDDING 向量模型 · 知识库搜索</div>' +
+        '<div id="dt-embedding-body"></div>' +
       '</div>';
     mountCallingCard(document.getElementById('about-calling-card'), ['YOUR MEMORY', 'IS OURS'], 'TAKE YOUR HEART');
     if (window.DTWorkspace) window.DTWorkspace.mountModelConfig(document.getElementById('dt-model-body'));
+    if (window.DTWorkspace) window.DTWorkspace.mountEmbeddingConfig(document.getElementById('dt-embedding-body'));
   } catch(e) {
     main.innerHTML = '<div class="error-state">Failed to load settings 设置加载失败：' + escapeHtml(e.message) + '</div>';
   }
