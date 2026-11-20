@@ -408,7 +408,7 @@
     content.innerHTML = card('NOTEBOOKS 笔记本',
       '<div style="padding:12px 14px;"><div class="dt-actions"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newNotebook()">NEW NOTEBOOK 新建</button><button class="btn btn-sm" onclick="DTWorkspace.go(\'notebook\')">REFRESH 刷新</button></div>' +
       (list.length ? '<div class="dt-list" style="margin-top:10px;">' + list.map(function (n) {
-        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(n.name) + '</b><small>' + (n.record_count || 0) + ' records · ' + esc(n.description || '') + '</small></div><button class="btn btn-sm" onclick="DTWorkspace.openNotebook(' + n.id + ')">OPEN 打开</button></div>';
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(n.name) + '</b><small>' + (n.record_count || 0) + ' records · ' + esc(n.description || '') + '</small></div><button class="btn btn-sm" onclick="DTWorkspace.openNotebook(\'' + esc(n.id) + '\')">OPEN 打开</button></div>';
       }).join('') + '</div>' : empty('还没有笔记本。把导师回答、题目和研究记录收进来。')) + '</div>');
   }
   function newNotebook() {
@@ -425,14 +425,55 @@
   }
   async function openNotebook(id) {
     try {
-      var n = await dtApi('/api/notebooks/' + id);
+      var n = await dtApi('/api/notebooks/' + encodeURIComponent(id));
       var recs = n.records || n.items || [];
-      modal(n.name || 'NOTEBOOK', (recs.length || 0) + ' records',
-        (recs.length ? '<div class="dt-list">' + recs.map(function (r) {
-          return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(r.title || r.summary || r.content || 'Record') + '</b><small>' + esc(r.record_type || r.type || '') + ' · ' + fmtDate(r.created_at) + '</small></div></div>';
-        }).join('') + '</div>' : '<div class="dt-empty">还没有记录</div>') +
-        '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>');
+      var body = '<div class="dt-actions" style="margin-bottom:8px;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.newNotebookRecord(\'' + esc(id) + '\')">NEW RECORD 新建记录</button><button class="btn btn-sm" onclick="DTWorkspace.exportNotebook(\'' + esc(id) + '\',\'' + esc(n.name || 'notebook') + '\')">EXPORT 导出 MD</button></div>';
+      body += recs.length ? '<div class="dt-list">' + recs.map(function (r) {
+        var rid = r.id || r.record_id;
+        return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(r.title || r.summary || r.output || 'Record') + '</b><small>' + esc(r.record_type || r.type || 'note') + ' · ' + fmtDate(r.created_at) + '</small>' +
+          (r.summary ? '<div class="dt-note" style="margin-top:4px;">' + esc(String(r.summary).slice(0, 220)) + '</div>' : '') +
+          '</div><button class="btn btn-sm btn-danger" onclick="DTWorkspace.deleteNotebookRecord(\'' + esc(id) + '\',\'' + esc(rid) + '\')">DEL</button></div>';
+      }).join('') + '</div>' : '<div class="dt-empty">还没有记录。把导师回答、题目、研究结论收进来。</div>';
+      body += '<div class="dt-actions" style="margin-top:10px;"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE 关闭</button></div>';
+      modal(n.name || 'NOTEBOOK', recs.length + ' records · ' + (n.description || '收集、整理、导出'), body);
     } catch (e) { toast('读取失败：' + e.message, 'error'); }
+  }
+  function newNotebookRecord(id) {
+    modal('NEW RECORD 新建记录', '把一段内容收进这个笔记本；以后可用于生成书、阅读或伙伴上下文。',
+      '<div class="dt-form"><input class="dt-input" id="dt-nbr-title" placeholder="标题，例如：TCP 拥塞控制总结">' +
+      '<select class="dt-select" id="dt-nbr-type"><option value="co_writer">NOTE 笔记 / 写作</option><option value="chat">CHAT 对话摘录</option><option value="question">QUESTION 题目</option><option value="research">RESEARCH 研究</option></select>' +
+      '<textarea class="dt-textarea" id="dt-nbr-content" rows="8" placeholder="内容、结论、题目解析……"></textarea>' +
+      '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.createNotebookRecord(\'' + esc(id) + '\')">SAVE 保存</button></div></div>');
+  }
+  async function createNotebookRecord(id) {
+    var title = (document.getElementById('dt-nbr-title') || {}).value || '';
+    var type = (document.getElementById('dt-nbr-type') || {}).value || 'co_writer';
+    var content = (document.getElementById('dt-nbr-content') || {}).value || '';
+    if (!title.trim() || !content.trim()) { toast('标题和内容不能为空', 'error'); return; }
+    try {
+      await dtApi('/api/notebooks/actions/add-record', { method: 'POST', body: JSON.stringify({
+        notebook_ids: [id], record_type: type, title: title.trim(),
+        summary: content.trim().slice(0, 300), user_query: title.trim(), output: content.trim(),
+        metadata: { source: 'memorylab' }, kb_name: null
+      }) });
+      closeModal(); toast('记录已加入笔记本', 'success'); openNotebook(id);
+    } catch (e) { toast('保存失败：' + e.message, 'error'); }
+  }
+  async function deleteNotebookRecord(id, rid) {
+    if (!confirm('删除这条记录？')) return;
+    try { await dtApi('/api/notebooks/' + encodeURIComponent(id) + '/records/' + encodeURIComponent(rid), { method: 'DELETE' }); toast('记录已删除', 'success'); openNotebook(id); }
+    catch (e) { toast('删除失败：' + e.message, 'error'); }
+  }
+  async function exportNotebook(id, name) {
+    try {
+      var resp = await fetch('/dt-api/api/notebooks/' + encodeURIComponent(id) + '/export');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var text = await resp.text();
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }));
+      a.download = (name || 'notebook') + '.md'; a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    } catch (e) { toast('导出失败：' + e.message, 'error'); }
   }
 
   async function memory(content) {
@@ -792,6 +833,7 @@
     render: render, renderGroup: renderGroup, renderSection: renderSection, navigate: navigate, go: go, renderTutor: tutor, closeModal: closeModal,
     newKb: newKb, createKb: createKb, uploadKb: uploadKb, deleteKb: deleteKb,
     newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
+    newNotebookRecord: newNotebookRecord, createNotebookRecord: createNotebookRecord, deleteNotebookRecord: deleteNotebookRecord, exportNotebook: exportNotebook,
     sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
     newEvent: newEvent, createEvent: createEvent, newTask: newTask, createTask: createTask,
     newMastery: newMastery, createMastery: createMastery,
