@@ -56,6 +56,7 @@
     books: ['BOOKS', '学习书', '从资料生成书 · 章节阅读'],
     reading: ['READING', '阅读', '阅读工作区 · 材料 · 会话'],
     practice: ['PRACTICE', '练习', '题库 · 错题 · 复习'],
+    ingest: ['INGEST', '资料导入', '文件夹 · AI 分类 · 知识库 · 笔记'],
     knowledge: ['KNOWLEDGE', '知识库', '上传资料 · RAG · 索引'],
     notebook: ['NOTEBOOK', '笔记', '按主题收集 · 复习'],
     memory: ['MEMORY', '记忆', 'L1 事实 · L2 学习状态 · L3 画像'],
@@ -68,7 +69,7 @@
 
   var GROUPS = {
     study: { title: 'STUDY', cn: '学习', sub: '总览 · 掌握路径 · 书 · 阅读 · 练习', sections: ['overview', 'learning', 'books', 'reading', 'practice'] },
-    library: { title: 'LIBRARY', cn: '资料', sub: '知识库 · 笔记 · 记忆', sections: ['knowledge', 'notebook', 'memory'] },
+    library: { title: 'LIBRARY', cn: '资料', sub: '资料导入 · 知识库 · 笔记 · 记忆', sections: ['ingest', 'knowledge', 'notebook', 'memory'] },
     plan: { title: 'PLAN', cn: '计划', sub: '日历 · 任务', sections: ['calendar', 'tasks'] },
     ai: { title: 'AI', cn: '助手', sub: '导师 · 伙伴 · 研究 · 可视化', sections: ['tutor', 'partners', 'research', 'visualize'] }
   };
@@ -132,7 +133,7 @@
     content.innerHTML = '<div class="p5-card"><div class="p5-card-header">LOADING 加载中</div></div>';
     var fn = {
       overview: overview, tutor: tutor, learning: learning, knowledge: knowledge,
-      books: books, reading: reading, practice: practice,
+      books: books, reading: reading, practice: practice, ingest: ingest,
       notebook: notebook, memory: memory, calendar: calendar, tasks: tasks,
       partners: partners, research: research, visualize: visualize
     }[section];
@@ -169,7 +170,8 @@
       '</div>' +
       card('WORKSPACES 功能入口',
         '<div class="dt-features" style="padding:14px;">' +
-          feature('tutor', 'TUTOR 导师', '对话 · 推理 · 工具 · 学习上下文') +
+          feature('ingest', 'INGEST 导入', '文件夹 · AI 分类 · 知识库 / 笔记') +
+    feature('tutor', 'TUTOR 导师', '对话 · 推理 · 工具 · 学习上下文') +
           feature('learning', 'LEARNING 学习', 'Mastery Path · Book · Reading') +
           feature('knowledge', 'KNOWLEDGE 知识库', '上传资料 · RAG · 索引') +
           feature('notebook', 'NOTEBOOK 笔记', '按主题收集 · 复习') +
@@ -730,6 +732,401 @@
       if (input) { input.value = '开始学习「' + (name || '') + '」，请先给我一个诊断问题。'; input.focus(); }
     }, 250);
   }
+
+
+  var ingestState = { files: [], categories: [], busy: false, last: null };
+  var INGEST_EXT = /\.(pdf|docx?|md|markdown|txt|pptx?|epub)$/i;
+  var DOCS_EXT = /\.(pdf|docx?|pptx?)$/i;
+
+  async function ingest(content) {
+    if (!ingestState.files.length && ingestState.last) {
+      // keep the last import visible as a status card, but start with an empty list
+    }
+    content.innerHTML = card('INGEST 资料导入',
+      '<div style="padding:12px 14px;">' +
+        '<div class="dt-note" style="margin-bottom:10px;">选一个文件夹或文件；AI 会自动分类，然后把资料同时归档到 <b>Knowledge 知识库</b> 和 <b>Notebook 笔记</b>。PDF/Word/PPT 可同步到 DOCS 教程文档。</div>' +
+        '<div class="dt-actions" style="margin-bottom:8px;">' +
+          '<button class="btn btn-sm btn-primary" onclick="DTWorkspace.pickIngestFolder()">SELECT FOLDER 选择文件夹</button>' +
+          '<button class="btn btn-sm" onclick="DTWorkspace.pickIngestFiles()">SELECT FILES 选择文件</button>' +
+          '<button class="btn btn-sm" onclick="DTWorkspace.openDocsFromIngest()">OPEN DOCS 教程文档</button>' +
+        '</div>' +
+        '<input type="file" id="dt-ingest-files" multiple hidden accept=".pdf,.doc,.docx,.md,.markdown,.txt,.ppt,.pptx,.epub" onchange="DTWorkspace.ingestInputChanged(this)">' +
+        '<input type="file" id="dt-ingest-folder" webkitdirectory directory multiple hidden onchange="DTWorkspace.ingestInputChanged(this)">' +
+        '<div class="dt-ingest-drop" id="dt-ingest-drop">' +
+          '<b>DROP FILES HERE 拖拽文件到这里</b><small>也可以点上面的 SELECT FOLDER，从文件管理器选择整个文件夹。</small>' +
+        '</div>' +
+        '<div class="dt-actions" style="margin:10px 0 6px;">' +
+          '<button class="btn btn-sm btn-primary" id="dt-ingest-ai" onclick="DTWorkspace.classifyIngest()">AI CLASSIFY 自动分类</button>' +
+          '<button class="btn btn-sm" id="dt-ingest-import" onclick="DTWorkspace.importIngest()">IMPORT / ARCHIVE 归档</button>' +
+          '<button class="btn btn-sm" onclick="DTWorkspace.clearIngest()">CLEAR 清空</button>' +
+          '<label class="dt-inline-check"><input type="checkbox" id="dt-ingest-docs" checked> 同步到 DOCS 教程</label>' +
+        '</div>' +
+        '<div class="dt-note" id="dt-ingest-status"></div>' +
+        '<div class="dt-note" id="dt-ingest-embed"></div>' +
+        '<div id="dt-ingest-count" class="dt-note"></div>' +
+        '<div id="dt-ingest-list"></div>' +
+      '</div>');
+    var drop = document.getElementById('dt-ingest-drop');
+    if (drop) {
+      drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('is-over'); });
+      drop.addEventListener('dragleave', function () { drop.classList.remove('is-over'); });
+      drop.addEventListener('drop', async function (e) {
+        e.preventDefault(); drop.classList.remove('is-over');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+          await ingestAddFiles(Array.from(e.dataTransfer.files), '');
+        }
+      });
+    }
+    renderIngestList();
+    checkIngestEmbedding();
+  }
+  async function checkIngestEmbedding() {
+    var el = document.getElementById('dt-ingest-embed');
+    if (!el) return null;
+    try {
+      var st = await dtApi('/api/system/status');
+      var e = (st && st.embeddings) || {};
+      ingestState.embeddingReady = e.status === 'configured';
+      if (!ingestState.embeddingReady) {
+        el.innerHTML = '<span style="color:var(--accent);">EMBEDDING 未配置：文件仍会存入 Knowledge，但不会建立向量索引。配置 Embedding 后在 Knowledge 中 REINDEX。</span>';
+      } else {
+        el.textContent = 'EMBEDDING 已配置：知识库会自动建立索引。';
+      }
+      return ingestState.embeddingReady;
+    } catch (e) {
+      el.textContent = '无法检查 Embedding 状态：' + e.message;
+      return null;
+    }
+  }
+
+  function ingestInputChanged(input) {
+    if (!input || !input.files) return;
+    ingestAddFiles(Array.from(input.files), '');
+    input.value = '';
+  }
+  function pickIngestFiles() {
+    var el = document.getElementById('dt-ingest-files');
+    if (el) el.click();
+  }
+  async function pickIngestFolder() {
+    if (window.showDirectoryPicker) {
+      try {
+        var dir = await showDirectoryPicker({ mode: 'read' });
+        setIngestStatus('正在扫描文件夹…', false);
+        await scanIngestDirectory(dir, '');
+        setIngestStatus('扫描完成', false);
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        // fall through to webkitdirectory input when the API is unavailable
+      }
+    }
+    var el = document.getElementById('dt-ingest-folder');
+    if (el) el.click();
+  }
+  async function scanIngestDirectory(dir, prefix) {
+    for await (var entry of dir.values()) {
+      if (ingestState.files.length >= 200) { toast('最多一次导入 200 个文件', 'error'); return; }
+      if (entry.kind === 'file') {
+        var f = await entry.getFile();
+        await ingestAddFiles([f], prefix);
+      } else if (entry.kind === 'directory') {
+        await scanIngestDirectory(entry, prefix ? prefix + '/' + entry.name : entry.name);
+      }
+    }
+  }
+  function ingestSupported(name) {
+    return INGEST_EXT.test(name || '');
+  }
+  function ingestSkip(name, rel) {
+    var low = String(name || '').toLowerCase();
+    if (!ingestSupported(name)) return true;
+    if (low === '.ds_store' || low.startsWith('~$') || low.endsWith('.tmp')) return true;
+    return /(^|\/)(\.git|node_modules|__MACOSX|\.cache)(\/|$)/i.test(rel || '');
+  }
+  async function ingestAddFiles(files, prefix) {
+    var added = 0, skipped = 0;
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var rel = prefix ? prefix + '/' + f.name : (f.webkitRelativePath || f.name);
+      if (ingestSkip(f.name, rel)) { skipped++; continue; }
+      if (f.size > 200 * 1024 * 1024) { skipped++; continue; }
+      if (ingestState.files.some(function (x) { return x.relPath === rel && x.size === f.size; })) { skipped++; continue; }
+      if (ingestState.files.length >= 200) { skipped++; break; }
+      var ext = (f.name.split('.').pop() || '').toLowerCase();
+      var excerpt = '';
+      if (/^(md|markdown|txt)$/i.test(ext)) {
+        try { excerpt = (await f.text()).slice(0, 1200); } catch (e) {}
+      }
+      ingestState.files.push({
+        id: 'f' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+        file: f, name: f.name, relPath: rel, ext: ext, size: f.size,
+        excerpt: excerpt, category: '', status: '待分类', docsStatus: ''
+      });
+      added++;
+    }
+    if (added) setIngestStatus('已加入 ' + added + ' 个文件' + (skipped ? '，跳过 ' + skipped + ' 个不支持/重复文件' : ''), false);
+    else if (skipped) setIngestStatus('没有可导入的新文件（跳过 ' + skipped + ' 个）', true);
+    renderIngestList();
+  }
+  function setIngestStatus(text, error) {
+    var el = document.getElementById('dt-ingest-status');
+    if (el) { el.textContent = text || ''; el.style.color = error ? 'var(--accent)' : ''; }
+  }
+  function ingestCategoryOptions() {
+    var names = ['未分类'];
+    ingestState.files.forEach(function (f) { if (f.category && names.indexOf(f.category) < 0) names.push(f.category); });
+    ingestState.categories.forEach(function (c) { if (c && names.indexOf(c) < 0) names.push(c); });
+    return names;
+  }
+  function setIngestCategory(id, value) {
+    var f = ingestState.files.filter(function (x) { return x.id === id; })[0];
+    if (f) { f.category = value || '未分类'; renderIngestList(); }
+  }
+  function clearIngest() {
+    if (ingestState.busy) return;
+    ingestState.files = []; ingestState.categories = []; ingestState.last = null;
+    setIngestStatus('', false); renderIngestList();
+  }
+  function renderIngestList() {
+    var list = document.getElementById('dt-ingest-list');
+    var count = document.getElementById('dt-ingest-count');
+    if (!list) return;
+    if (count) {
+      var cats = {};
+      ingestState.files.forEach(function (f) { cats[f.category || '未分类'] = 1; });
+      count.textContent = ingestState.files.length + ' 个文件 · ' + Object.keys(cats).length + ' 个分类' + (ingestState.last ? ' · 上次：' + ingestState.last : '');
+    }
+    if (!ingestState.files.length) {
+      list.innerHTML = '<div class="dt-empty">还没有选择文件。点 SELECT FOLDER 从文件管理器选择整个文件夹。</div>';
+      return;
+    }
+    var options = ingestCategoryOptions();
+    list.innerHTML = '<div class="dt-list">' + ingestState.files.map(function (f) {
+      var opts = options.map(function (c) { return '<option value="' + esc(c) + '"' + ((f.category || '未分类') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
+      return '<div class="dt-ingest-row"><div class="dt-ingest-file"><b>' + esc(f.name) + '</b><small>' + esc(f.relPath) + ' · ' + f.ext.toUpperCase() + ' · ' + Math.round(f.size / 1024) + ' KB</small>' + (f.excerpt ? '<div class="dt-ingest-excerpt">' + esc(f.excerpt.slice(0, 160)) + '</div>' : '') + '</div>' +
+        '<select class="dt-select dt-ingest-cat" onchange="DTWorkspace.setIngestCategory(\'' + f.id + '\',this.value)">' + opts + '</select>' +
+        '<span class="dt-ingest-status">' + esc(f.status || '') + (f.indexStatus ? ' · ' + esc(f.indexStatus) : '') + (f.docsStatus ? ' · DOCS ' + esc(f.docsStatus) : '') + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function buildClassifyPrompt(files) {
+    var items = files.slice(0, 80).map(function (f) {
+      return { id: f.id, name: f.name, path: f.relPath, ext: f.ext, size_kb: Math.round(f.size / 1024), excerpt: (f.excerpt || '').slice(0, 500) };
+    });
+    return '你是学习资料管理员。根据文件名、相对路径、类型和摘录，把文件分到 3-8 个中文主题分类。\n' +
+      '只输出合法 JSON，不要 Markdown 代码块，不要解释。格式：\n' +
+      '{"categories":[{"name":"分类名","description":"分类说明"}],"files":[{"id":"文件id","category":"分类名"}]}\n' +
+      '分类要适合学习资料归档，例如：Java 后端、计算机网络、数学、英语、操作系统、数据库、未分类。\n' +
+      '文件列表：\n' + JSON.stringify(items);
+  }
+  function extractJsonObject(raw) {
+    var text = String(raw || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+    var a = text.indexOf('{'); var b = text.lastIndexOf('}');
+    if (a < 0 || b <= a) throw new Error('AI 没有返回 JSON');
+    return JSON.parse(text.slice(a, b + 1));
+  }
+  function parseClassification(raw) {
+    var obj = extractJsonObject(raw);
+    var cats = [];
+    if (Array.isArray(obj.categories)) {
+      obj.categories.forEach(function (c) { var n = typeof c === 'string' ? c : (c && c.name); if (n) cats.push(String(n).trim()); });
+    }
+    var map = {};
+    if (Array.isArray(obj.files)) {
+      obj.files.forEach(function (x) { if (x && x.id && x.category) map[String(x.id)] = String(x.category).trim(); });
+    } else if (obj.files && typeof obj.files === 'object') {
+      Object.keys(obj.files).forEach(function (k) { if (obj.files[k]) map[k] = String(obj.files[k]).trim(); });
+    }
+    var names = [];
+    cats.concat(Object.keys(map).map(function (k) { return map[k]; })).forEach(function (n) {
+      if (n && names.indexOf(n) < 0) names.push(n);
+    });
+    if (!names.length) throw new Error('AI 分类为空');
+    ingestState.categories = names.slice(0, 8);
+    ingestState.files.forEach(function (f) {
+      var c = map[f.id];
+      f.category = c && names.indexOf(c) >= 0 ? c : (f.category || '未分类');
+      if (names.indexOf(f.category) < 0) ingestState.categories.push(f.category);
+    });
+    // files outside the first 80 stay unclassified rather than being guessed by the model
+    return true;
+  }
+  function ingestFallbackCategory(rel) {
+    var s = String(rel || '').toLowerCase();
+    if (/(java|spring|mybatis|jdk|jvm|maven|gradle)/.test(s)) return 'Java 后端';
+    if (/(network|tcp|udp|http|dns|计算机网络|网络)/.test(s)) return '计算机网络';
+    if (/(math|calculus|linear|algebra|概率|数学|高数|线代)/.test(s)) return '数学';
+    if (/(english|ielts|toefl|英语|词汇|语法)/.test(s)) return '英语';
+    if (/(database|mysql|sql|redis|数据库)/.test(s)) return '数据库';
+    if (/(operating|linux|操作系统|进程|线程)/.test(s)) return '操作系统';
+    if (/(history|历史)/.test(s)) return '历史';
+    return '未分类';
+  }
+  function localClassifyIngest() {
+    ingestState.files.forEach(function (f) { f.category = ingestFallbackCategory(f.relPath + ' ' + f.name); });
+    ingestState.categories = [];
+    ingestState.files.forEach(function (f) { if (ingestState.categories.indexOf(f.category) < 0) ingestState.categories.push(f.category); });
+  }
+  function askDeepTutor(prompt, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+      var ws;
+      var buf = '';
+      var sid = '';
+      var settled = false;
+      function finish(ok, value) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try { ws.close(); } catch (e) {}
+        if (sid) {
+          fetch('/dt-api/api/sessions/' + encodeURIComponent(sid), { method: 'DELETE' }).catch(function () {});
+        }
+        if (ok) resolve(value); else reject(value);
+      }
+      var timer = setTimeout(function () { finish(false, new Error('AI 分类超时')); }, timeoutMs || 150000);
+      try { ws = new WebSocket(proto + location.host + '/dt-ws'); } catch (e) { finish(false, e); return; }
+      ws.onopen = function () {
+        ws.send(JSON.stringify({ type: 'start_turn', protocol_version: '2.0', content: prompt, capability: 'chat', session_id: null, language: 'Chinese' }));
+      };
+      ws.onmessage = function (ev) {
+        var d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+        if (d.session_id) sid = d.session_id;
+        if (d.type === 'content' && d.content) buf += d.content;
+        if (d.type === 'result' && d.content) { if (buf.indexOf(d.content) < 0) buf += d.content; }
+        if (d.type === 'error') { finish(false, new Error(d.content || 'AI 请求失败')); return; }
+        if (d.type === 'done' || (d.metadata && d.metadata.turn_terminal)) { finish(true, buf); }
+      };
+      ws.onerror = function () { finish(false, new Error('无法连接 AI 分类服务')); };
+      ws.onclose = function () { if (!settled) finish(buf ? true : false, buf ? buf : new Error('AI 连接关闭')); };
+    });
+  }
+  async function classifyIngest() {
+    if (ingestState.busy || !ingestState.files.length) { toast('先选择文件', 'error'); return; }
+    ingestState.busy = true;
+    setIngestStatus('AI 正在阅读文件名和摘录并分类…（首次可能较慢）', false);
+    var aiWorked = false;
+    try {
+      var raw = await askDeepTutor(buildClassifyPrompt(ingestState.files), 180000);
+      aiWorked = parseClassification(raw);
+    } catch (e) {
+      localClassifyIngest();
+      setIngestStatus('AI 不可用，已用本地规则分类：' + e.message, true);
+    }
+    ingestState.busy = false;
+    if (aiWorked) setIngestStatus('AI 分类完成：' + ingestState.categories.length + ' 个分类。可手动调整后再归档。', false);
+    renderIngestList();
+  }
+  function ingestFileStatus(file, text) { file.status = text; renderIngestList(); }
+  async function ensureIngestNotebook(name) {
+    var data = await dtApi('/api/notebooks');
+    var list = (data && data.notebooks) || [];
+    var found = list.filter(function (n) { return n.name === name; })[0];
+    if (found) return found.id;
+    var r = await dtApi('/api/notebooks', { method: 'POST', body: JSON.stringify({ name: name, description: '由资料导入自动创建', color: '#e60012', icon: 'book' }) });
+    return (r.notebook && r.notebook.id) || r.id;
+  }
+  async function ensureIngestKb(name) {
+    var data = await dtApi('/api/knowledge-bases');
+    var list = Array.isArray(data) ? data : [];
+    var found = list.filter(function (k) { return (k.name || k.kb_name) === name; })[0];
+    if (found) return found.name || found.kb_name || name;
+    var fd = new FormData();
+    fd.append('name', name);
+    fd.append('rag_provider', 'llamaindex');
+    await dtApi('/api/knowledge-bases', { method: 'POST', body: fd });
+    return name;
+  }
+  async function uploadIngestKb(kb, file) {
+    var fd = new FormData();
+    fd.append('files', file.file, file.name);
+    fd.append('rel_paths', file.relPath);
+    fd.append('rag_provider', 'llamaindex');
+    await dtApi('/api/knowledge-bases/' + encodeURIComponent(kb) + '/upload', { method: 'POST', body: fd });
+  }
+  async function uploadIngestDocs(file) {
+    if (!DOCS_EXT.test(file.name)) return 'skip';
+    var fd = new FormData();
+    fd.append('file', file.file);
+    fd.append('user_id', '1');
+    var resp = await fetch('/api/documents/upload', { method: 'POST', body: fd });
+    if (!resp.ok) throw new Error('DOCS HTTP ' + resp.status);
+    return 'ok';
+  }
+  async function addIngestNotebookRecord(nbId, category, file) {
+    var summary = '来自资料导入；分类：' + category + '；文件：' + file.relPath + '；大小：' + Math.round(file.size / 1024) + ' KB。';
+    var output = summary + (file.excerpt ? '\n\n摘录：\n' + file.excerpt.slice(0, 900) : '');
+    await dtApi('/api/notebooks/actions/add-record', {
+      method: 'POST',
+      body: JSON.stringify({
+        notebook_ids: [nbId], record_type: 'co_writer', title: file.name,
+        summary: output.slice(0, 500), user_query: file.relPath, output: output,
+        metadata: { source: 'memorylab-ingest', category: category, rel_path: file.relPath },
+        kb_name: category
+      })
+    });
+  }
+  async function importIngest() {
+    if (ingestState.busy || !ingestState.files.length) { toast('先选择文件', 'error'); return; }
+    ingestState.busy = true;
+    var syncDocs = document.getElementById('dt-ingest-docs');
+    var doDocs = !!(syncDocs && syncDocs.checked);
+    var names = [];
+    ingestState.files.forEach(function (f) {
+      var c = f.category || '未分类';
+      if (names.indexOf(c) < 0) names.push(c);
+    });
+    setIngestStatus('准备知识库和笔记本…', false);
+    var embeddingReady = await checkIngestEmbedding();
+    var targets = {};
+    for (var i = 0; i < names.length; i++) {
+      var cat = names[i];
+      try {
+        var nb = await ensureIngestNotebook(cat);
+        var kb = await ensureIngestKb(cat);
+        targets[cat] = { notebook: nb, kb: kb };
+      } catch (e) {
+        targets[cat] = { error: e.message };
+      }
+    }
+    var ok = 0, fail = 0;
+    for (var j = 0; j < ingestState.files.length; j++) {
+      var f = ingestState.files[j];
+      var cat = f.category || '未分类';
+      var t = targets[cat] || {};
+      if (t.error) { f.status = '分类归档失败：' + t.error; fail++; renderIngestList(); continue; }
+      try {
+        f.status = '上传知识库…'; renderIngestList();
+        await uploadIngestKb(t.kb, f);
+        f.indexStatus = embeddingReady === false ? '未索引（Embedding 未配置）' : '已提交索引';
+        if (doDocs && DOCS_EXT.test(f.name)) {
+          f.status = '同步 DOCS…'; renderIngestList();
+          try { f.docsStatus = await uploadIngestDocs(f); }
+          catch (e) { f.docsStatus = '失败'; }
+        }
+        f.status = '写入笔记…'; renderIngestList();
+        await addIngestNotebookRecord(t.notebook, cat, f);
+        f.status = embeddingReady === false ? '已归档（未索引）' : '已归档'; ok++; renderIngestList();
+      } catch (e) {
+        f.status = '失败：' + e.message; fail++; renderIngestList();
+      }
+    }
+    ingestState.busy = false;
+    ingestState.last = new Date().toLocaleString('zh-CN');
+    try { localStorage.setItem('memorylab.ingest.last', ingestState.last); } catch (e) {}
+    var suffix = embeddingReady === false ? ' Knowledge 文件已保存，但 Embedding 未配置，索引未建立；配置后到 KNOWLEDGE 点 REINDEX。' : '';
+    setIngestStatus('归档完成：' + ok + ' 个成功' + (fail ? '，' + fail + ' 个失败' : '') + '。分类已进入 LIBRARY → KNOWLEDGE / NOTEBOOK。' + suffix, fail > 0 || embeddingReady === false);
+    toast('资料归档完成：' + ok + ' 成功 / ' + fail + ' 失败', fail ? 'error' : 'success');
+    renderIngestList();
+  }
+  function openDocsFromIngest() {
+    if (window.loadPage) loadPage('documents');
+    else location.hash = '#documents';
+  }
+  window.openIngest = function () {
+    if (window.loadPage) loadPage('dt-ingest');
+    else location.hash = '#dt-ingest';
+  };
 
   async function knowledge(content) {
     var kbs = await dtApi('/api/knowledge-bases');
@@ -1312,6 +1709,7 @@
     newQuestion: newQuestion, createQuestion: createQuestion, openPracticeQuestion: openPracticeQuestion, revealPractice: revealPractice, checkPractice: checkPractice, reviewPractice: reviewPractice,
     newPartner: newPartner, createPartner: createPartner, editPartner: editPartner, savePartner: savePartner, deletePartner: deletePartner,
     openPartnerChat: openPartnerChat, sendPartnerChat: sendPartnerChat,
+    pickIngestFolder: pickIngestFolder, pickIngestFiles: pickIngestFiles, ingestInputChanged: ingestInputChanged, classifyIngest: classifyIngest, importIngest: importIngest, clearIngest: clearIngest, setIngestCategory: setIngestCategory, openDocsFromIngest: openDocsFromIngest,
     openKb: openKb, reindexKb: reindexKb, previewKbFile: previewKbFile,
     mountModelConfig: mountModelConfig, editModel: editModel, saveModel: saveModel
   };

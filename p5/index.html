@@ -2474,7 +2474,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
 </style>
 <link rel="stylesheet" href="teach.css">
 <link rel="stylesheet" href="archive3d.css?v=8">
-<link rel="stylesheet" href="deeptutor.css?v=20261120">
+<link rel="stylesheet" href="deeptutor.css?v=20261120c">
 <link rel="modulepreload" href="./archive3d.bundle.js?v=24">
 </head>
 <body>
@@ -2547,7 +2547,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
 
 <script src="/vendor/echarts.min.js"></script>
 <script src="teach.js"></script>
-<script src="deeptutor.js?v=20261120"></script>
+<script src="deeptutor.js?v=20261120c"></script>
 <script>
 /* ================================================================
  * DeepTutor — P5 Pentagram UI (r/R=0.45饱满比例, 3层结构)
@@ -2738,7 +2738,7 @@ function loadPage(page) {
       if (page.indexOf('dt-group-') === 0) navPage = page;
       else if (page.indexOf('dt-') === 0) {
         var sec = page.slice(3);
-        var grp = (sec === 'overview' || sec === 'learning') ? 'study' : (sec === 'knowledge' || sec === 'notebook' || sec === 'memory') ? 'library' : (sec === 'calendar' || sec === 'tasks') ? 'plan' : 'ai';
+        var grp = (sec === 'overview' || sec === 'learning') ? 'study' : (sec === 'ingest' || sec === 'knowledge' || sec === 'notebook' || sec === 'memory') ? 'library' : (sec === 'calendar' || sec === 'tasks') ? 'plan' : 'ai';
         navPage = 'dt-group-' + grp;
       }
       document.querySelectorAll('.nav-tab').forEach(function (t) {
@@ -3028,6 +3028,7 @@ async function renderDocuments(main) {
     '<div style="max-width:900px;margin:0 auto;">' +
     '<div class="p5-card">' +
       '<div class="p5-card-header">UPLOAD 上传 <span style="font-size:10px;color:var(--text-dim);margin-left:8px;">PDF / Word / PPT</span></div>' +
+      '<div class="dt-actions" style="margin:6px 0 10px;"><button class="btn btn-sm btn-primary" onclick="openIngest()">FOLDER IMPORT 文件夹导入</button><span style="font-size:10px;color:var(--text-dim);">一次选整个文件夹，AI 自动分类到知识库/笔记</span></div>' +
       '<input type="file" id="doc-file" accept=".pdf,.docx,.ppt,.pptx" style="margin-bottom:10px;">' +
       '<button class="btn btn-primary" onclick="uploadDocument()">UPLOAD 上传</button>' +
       '<div id="upload-progress" style="display:none;margin-top:8px;">' +

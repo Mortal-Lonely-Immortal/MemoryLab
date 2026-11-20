@@ -142,3 +142,16 @@ html[data-theme="white"] .dt-channel { background: #f4fbff; }
 .dt-stat small { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 8px; color: var(--text-dim); letter-spacing: .6px; }
 
 .dt-partner-log { max-height: 45vh; overflow: auto; padding: 4px 2px; }
+
+.dt-ingest-drop { border:2px dashed var(--border); padding:18px; text-align:center; background:var(--bg-card); margin:8px 0; }
+.dt-ingest-drop.is-over { border-color:var(--accent); background:var(--bg); }
+.dt-ingest-drop b { display:block; font-family:var(--font-mono); font-size:11px; letter-spacing:1px; color:var(--accent); }
+.dt-ingest-drop small { display:block; margin-top:5px; color:var(--text-dim); font-size:10px; }
+.dt-ingest-row { display:flex; align-items:center; gap:10px; padding:9px 10px; border-bottom:1px solid var(--border); }
+.dt-ingest-file { flex:1; min-width:0; }
+.dt-ingest-file b { display:block; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dt-ingest-file small { display:block; margin-top:2px; font-family:var(--font-mono); font-size:8px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dt-ingest-excerpt { margin-top:3px; color:var(--text-dim); font-size:9px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dt-ingest-cat { max-width:150px; }
+.dt-ingest-status { min-width:110px; text-align:right; font-family:var(--font-mono); font-size:8px; color:var(--text-dim); }
+.dt-inline-check { display:flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:9px; color:var(--text-dim); }
