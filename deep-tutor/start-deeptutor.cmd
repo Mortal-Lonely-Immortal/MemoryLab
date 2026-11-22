@@ -1,6 +1,7 @@
 @echo off
 setlocal
 set "HERE=%~dp0"
+cd /d "%HERE%"
 set "PYTHONPATH=%HERE%truststore_bootstrap;%PYTHONPATH%"
 if exist "%HERE%certs\windows-roots.pem" (
   set "SSL_CERT_FILE=%HERE%certs\windows-roots.pem"
@@ -13,6 +14,8 @@ echo DeepTutor home: %DEEPTUTOR_HOME%
 "%HERE%.venv\Scripts\deeptutor.exe" start --home "%DEEPTUTOR_HOME%" --no-browser --detach
 echo.
 echo DeepTutor should be at http://127.0.0.1:3782
+
+
 
 
 
