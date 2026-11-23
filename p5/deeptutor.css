@@ -199,3 +199,7 @@ html[data-theme="white"] .dt-channel { background: #f4fbff; }
 .dt-attach-index { border:0; background:transparent; color:var(--accent); cursor:pointer; font-family:var(--font-mono); font-size:8px; padding:0; }
 .dt-attach-index:hover { text-decoration:underline; }
 @media (max-width:700px) { .dt-chat-tools .dt-select { max-width:100%; } .dt-chat-tools-note { width:100%; } }
+
+.dt-attach-thumb { width:42px; height:42px; object-fit:cover; border:1px solid var(--border); background:#111; flex:0 0 auto; }
+.dt-msg.user .dt-attach-thumb { border-color:rgba(255,255,255,.45); }
+@media (max-width:700px) { .dt-attach-thumb { width:34px; height:34px; } }

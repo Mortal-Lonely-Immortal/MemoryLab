@@ -216,7 +216,9 @@
           '</div>' +
           '<div class="dt-chat-tools">' +
             '<button class="btn btn-sm btn-primary" onclick="DTWorkspace.chooseChatAttachments()">+ ATTACH 附件</button>' +
+            '<button class="btn btn-sm" onclick="DTWorkspace.chooseChatImages()">+ IMAGE 图片</button>' +
             '<input type="file" id="dt-chat-file" multiple hidden accept=".pdf,.doc,.docx,.ppt,.pptx,.md,.markdown,.txt,.epub,.png,.jpg,.jpeg,.webp,.gif" onchange="DTWorkspace.chatFilesSelected(this)">' +
+            '<input type="file" id="dt-image-file" multiple hidden accept="image/*" onchange="DTWorkspace.chatImagesSelected(this)">' +
             '<select class="dt-select" id="dt-chat-kb" onchange="DTWorkspace.setChatKb(this.value)"><option value="__tutor__">Tutor 附件（自动索引）</option></select>' +
             '<span class="dt-chat-tools-note" id="dt-chat-kb-note">附件加入当前对话工作区，并同步索引到所选知识库</span>' +
           '</div>' +
@@ -226,7 +228,10 @@
         '</div>' +
       '</div>';
     var input = document.getElementById('dt-chat-text');
-    if (input) input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
+    if (input) {
+      input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
+      input.addEventListener('paste', chatPasteHandler);
+    }
     paintChat();
     paintChatPending();
     loadChatKbs();
@@ -451,6 +456,7 @@
       if (u.indexOf('/dt-api/') === 0) return u;
       return '/dt-api' + (u.charAt(0) === '/' ? '' : '/') + u;
     }
+    if (a.base64 && /^image\//i.test(a.mime_type || '')) return 'data:' + (a.mime_type || 'image/png') + ';base64,' + a.base64;
     if (a.workspace_item_id && (a.workspace_id || (state.chat && state.chat.workspaceId))) {
       var wid = a.workspace_id || state.chat.workspaceId;
       return '/dt-api/files/workspace-items/' + encodeURIComponent(wid) + '/' + encodeURIComponent(a.workspace_item_id);
@@ -462,12 +468,15 @@
     var status = a.kbStatus || (a._uploading ? '上传知识库…' : '');
     var cls = /失败|error/i.test(status) ? ' is-err' : (/已送索引|已索引|已归档/.test(status) ? ' is-ok' : '');
     var open = attachmentOpenUrl(a);
+    var thumbSrc = a.previewUrl || ((a.type === 'image' && a.base64) ? ('data:' + (a.mime_type || 'image/png') + ';base64,' + a.base64) : '');
+    var thumb = a.type === 'image' ? '<img class="dt-attach-thumb" src="' + esc(thumbSrc) + '" alt="">' : '';
     var html = '<span class="dt-attach-chip" data-att-id="' + esc(a.id) + '">' +
+      thumb +
       '<span class="dt-attach-name" title="' + esc(name) + '">' + esc(name) + '</span>' +
       '<small>' + esc(fmtBytes(a.size)) + '</small>' +
       (status ? '<span class="dt-attach-status' + cls + '">' + esc(status) + '</span>' : '') +
       (open ? '<a class="dt-attach-open" href="' + esc(open) + '" target="_blank" rel="noopener">OPEN</a>' : '') +
-      (!pending && !/已送索引/.test(status) && !a._uploading ? '<button class="dt-attach-index" onclick="DTWorkspace.indexChatAttachment(\'' + esc(a.id) + '\')">INDEX 索引</button>' : '') +
+      (!pending && a.type !== 'image' && !/已送索引/.test(status) && !a._uploading ? '<button class="dt-attach-index" onclick="DTWorkspace.indexChatAttachment(\'' + esc(a.id) + '\')">INDEX 索引</button>' : '') +
       (pending ? '<button class="dt-attach-x" title="移除" onclick="DTWorkspace.removeChatAttachment(\'' + esc(a.id) + '\')">×</button>' : '') +
       '</span>';
     return html;
@@ -511,31 +520,62 @@
     var input = document.getElementById('dt-chat-file');
     if (input) input.click();
   }
+  function chooseChatImages() {
+    var input = document.getElementById('dt-image-file');
+    if (input) input.click();
+  }
+  function chatImagesSelected(input) {
+    return chatFilesSelected(input);
+  }
   async function chatFilesSelected(input) {
-    if (!input || !input.files || !state.chat) return;
+    if (!input || !input.files) return;
     var files = Array.prototype.slice.call(input.files);
     input.value = '';
+    await addChatFiles(files);
+  }
+  async function addChatFiles(files) {
+    if (!state.chat) return;
     if (!state.chat.attachments) state.chat.attachments = [];
     if (!state.chat.maxFileBytes) state.chat.maxFileBytes = 20 * 1024 * 1024;
     for (var i = 0; i < files.length; i++) {
       var f = files[i];
       if (state.chat.attachments.length >= 5) { toast('一次最多 5 个附件', 'error'); break; }
       if (f.size > state.chat.maxFileBytes) { toast('附件超过 20MB：' + f.name, 'error'); continue; }
+      var mime = f.type || chatFileMime(f.name);
+      var isImage = /^image\//i.test(mime) || /\.(png|jpe?g|webp|gif)$/i.test(f.name);
       var a = { id: chatAttachmentId(), file: f, filename: f.name, name: f.name, size: f.size,
-        mime_type: f.type || chatFileMime(f.name), type: /^image\//i.test(f.type || '') ? 'image' : 'file',
-        base64: '', kbStatus: '读取中…' };
+        mime_type: mime, type: isImage ? 'image' : 'file',
+        previewUrl: isImage ? URL.createObjectURL(f) : '',
+        base64: '', kbStatus: isImage ? '仅对话 · 图片' : '读取中…' };
       state.chat.attachments.push(a);
       paintChatPending();
       try {
         a.base64 = await readChatFileBase64(f);
-        a.kbStatus = '待索引';
-        paintChatPending();
-        uploadAttachmentToKb(a);
+        if (isImage) {
+          a.kbStatus = '仅对话 · 图片';
+          paintChatPending();
+        } else {
+          a.kbStatus = '待索引';
+          paintChatPending();
+          uploadAttachmentToKb(a);
+        }
       } catch (e) {
         a.kbStatus = '读取失败：' + e.message;
         paintChatPending();
       }
     }
+  }
+  async function chatPasteHandler(e) {
+    if (!state.chat || !e.clipboardData) return;
+    var items = e.clipboardData.items || [];
+    var files = [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && /^image\//i.test(items[i].type || '')) {
+        var f = items[i].getAsFile();
+        if (f) files.push(f);
+      }
+    }
+    if (files.length) { e.preventDefault(); await addChatFiles(files); }
   }
   function removeChatAttachment(id) {
     if (!state.chat) return;
@@ -585,6 +625,7 @@
   }
   async function uploadAttachmentToKb(a) {
     if (!a || a._uploading) return;
+    if (a.type === 'image') { a.kbStatus = '仅对话 · 图片'; paintChatPending(); paintChat(); return; }
     a._uploading = true;
     a.kbStatus = '准备上传知识库…';
     paintChatPending();
@@ -635,6 +676,7 @@
       mime_type: a.mime_type || a.mimeType || chatFileMime(filename), base64: a.base64 || '', url: a.url || '',
       workspace_id: a.workspace_id || '', workspace_item_id: a.workspace_item_id || '',
       type: /^image\//i.test(a.mime_type || a.mimeType || '') ? 'image' : 'file',
+      previewUrl: /^image\//i.test(a.mime_type || a.mimeType || '') ? ((a.url || '') || (a.base64 ? ('data:' + (a.mime_type || 'image/png') + ';base64,' + a.base64) : '')) : '',
       generated: true, kbStatus: '' };
   }
   function collectChatGenerated(d) {
@@ -2188,7 +2230,7 @@
     newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
     newNotebookRecord: newNotebookRecord, createNotebookRecord: createNotebookRecord, deleteNotebookRecord: deleteNotebookRecord, exportNotebook: exportNotebook,
     sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
-    chooseChatAttachments: chooseChatAttachments, chatFilesSelected: chatFilesSelected, setChatKb: setChatKb,
+    chooseChatAttachments: chooseChatAttachments, chooseChatImages: chooseChatImages, chatFilesSelected: chatFilesSelected, chatImagesSelected: chatImagesSelected, setChatKb: setChatKb,
     removeChatAttachment: removeChatAttachment, indexChatAttachment: indexChatAttachment,
     newEvent: newEvent, createEvent: createEvent, newTask: newTask, createTask: createTask,
     newMastery: newMastery, createMastery: createMastery, openMastery: openMastery, studyMastery: studyMastery,

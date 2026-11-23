@@ -72,3 +72,23 @@ pdf doc docx ppt pptx md markdown txt epub
 ```
 
 如果资料敏感，先选择专用 KB，或不要勾选已有 KB；不要把自己的 `data` 目录连同 API Key 一起发给别人。
+
+## 图片附件
+
+导师页现在有两个入口：
+
+```text
++ ATTACH 附件    PDF / Word / PPT / Markdown / TXT / EPUB
++ IMAGE 图片     PNG / JPG / JPEG / WEBP / GIF
+```
+
+也可以直接在聊天输入框里按 `Ctrl + V` 粘贴剪贴板图片。
+
+图片的行为：
+
+- 以 `type: image`、base64 发送给 DeepTutor，导师在当轮对话中可读取
+- chip 上显示缩略图、文件名、大小和 `OPEN`
+- 图片不会上传到文本知识库，状态显示 `仅对话 · 图片`
+- 需要长期检索图片内容时，建议先 OCR/转成文字，再作为文档上传
+
+图片仍然受 20 MB / 单次 5 个附件的限制。
