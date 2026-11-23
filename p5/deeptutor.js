@@ -268,6 +268,88 @@
     if (window.__dtPendingMode) { setChatMode(window.__dtPendingMode); window.__dtPendingMode = null; }
   }
 
+
+  function safeChatImageSrc(url) {
+    var u = String(url || '').trim();
+    if (!u) return '';
+    if (/^data:image\//i.test(u) || /^blob:/i.test(u) || /^https?:\/\//i.test(u)) return u;
+    if (u.indexOf('/dt-api/') === 0) return u;
+    if (u.charAt(0) === '/') return '/dt-api' + u;
+    return '';
+  }
+  function chatImageFigureHtml(src, alt) {
+    var safe = safeChatImageSrc(src);
+    if (!safe) return '';
+    var label = alt || '生成图';
+    return '<figure class="dt-msg-figure"><a href="' + esc(safe) + '" target="_blank" rel="noopener">' +
+      '<img src="' + esc(safe) + '" alt="' + esc(label) + '" loading="lazy" onerror="this.closest(\'figure\').style.display=\'none\'"></a>' +
+      '<figcaption>' + esc(label) + '</figcaption></figure>';
+  }
+  function renderChatTextSegment(text) {
+    var raw = String(text || '');
+    var out = '', last = 0, re = /!\[([^\]]*)\]\(([^)\s]+)\)/g, m;
+    while ((m = re.exec(raw))) {
+      out += esc(raw.slice(last, m.index));
+      out += chatImageFigureHtml(m[2], m[1] || '图片');
+      last = re.lastIndex;
+    }
+    out += esc(raw.slice(last));
+    return out;
+  }
+  function renderAssistantText(text) {
+    var raw = String(text || '');
+    var out = '', last = 0, re = /```mermaid\s*\n([\s\S]*?)```/gi, m;
+    while ((m = re.exec(raw))) {
+      out += renderChatTextSegment(raw.slice(last, m.index));
+      out += '<div class="dt-mermaid" data-mermaid="' + esc(m[1]) + '"><pre class="dt-mermaid-src">' + esc(m[1]) + '</pre></div>';
+      last = re.lastIndex;
+    }
+    out += renderChatTextSegment(raw.slice(last));
+    return out;
+  }
+  function scheduleMermaidRender(root) {
+    if (!root) return;
+    if (state.chat && state.chat._mermaidTimer) clearTimeout(state.chat._mermaidTimer);
+    state.chat._mermaidTimer = setTimeout(function () { renderMermaidBlocks(root); }, 420);
+  }
+  async function renderMermaidBlocks(root) {
+    if (!root || !window.mermaid) return;
+    var nodes = Array.prototype.slice.call(root.querySelectorAll('.dt-mermaid:not([data-rendered])'));
+    if (!nodes.length) return;
+    var white = document.documentElement.getAttribute('data-theme') === 'white';
+    try {
+      window.mermaid.initialize({
+        startOnLoad: false, securityLevel: 'strict', theme: white ? 'default' : 'dark',
+        fontFamily: 'Microsoft YaHei, sans-serif',
+        themeVariables: white ? {
+          fontFamily: 'Microsoft YaHei, sans-serif', primaryTextColor: '#0a1230', textColor: '#0a1230',
+          lineColor: '#1b57ff', signalColor: '#1b57ff', signalTextColor: '#0a1230',
+          noteBkgColor: '#eaf4fb', noteTextColor: '#0a1230', actorBkg: '#f2f9fd', actorTextColor: '#0a1230'
+        } : {
+          fontFamily: 'Microsoft YaHei, sans-serif', primaryTextColor: '#f7f4ee', textColor: '#f7f4ee',
+          lineColor: '#d8d8d8', signalColor: '#d8d8d8', signalTextColor: '#f7f4ee',
+          noteBkgColor: '#242424', noteTextColor: '#f7f4ee', actorBkg: '#1a1a1a', actorTextColor: '#f7f4ee'
+        }
+      });
+    } catch (e) {}
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var code = el.getAttribute('data-mermaid') || '';
+      if (!code.trim()) continue;
+      el.setAttribute('data-rendered', '1');
+      try {
+        var out = await window.mermaid.render('dtm_' + Date.now() + '_' + i, code);
+        el.innerHTML = out.svg || '';
+        el.classList.add('is-rendered');
+      } catch (e) {
+        el.classList.add('is-error');
+        el.innerHTML = '<div class="dt-mermaid-error">图形渲染失败，下面是原始 Mermaid 代码。</div><pre class="dt-mermaid-src">' + esc(code) + '</pre>';
+      }
+    }
+    var log = document.getElementById('dt-chat-log');
+    if (log) log.scrollTop = log.scrollHeight;
+  }
+
   function paintChat() {
     var log = document.getElementById('dt-chat-log');
     if (!log || !state.chat) return;
@@ -278,10 +360,16 @@
     log.innerHTML = state.chat.messages.map(function (m, i) {
       var cls = m.role === 'user' ? 'user' : (m.role === 'sys' ? 'sys' : '');
       var actions = m.role === 'assistant' && m.text ? '<div class="dt-msg-actions"><button class="dt-mini-btn" onclick="DTWorkspace.saveChatToNotebook(' + i + ')">SAVE TO NOTEBOOK 保存</button></div>' : '';
-      var atts = (m.attachments && m.attachments.length) ? '<div class="dt-msg-atts">' + m.attachments.map(function (a) { return attachmentChipHtml(a, false); }).join('') + '</div>' : '';
-      return '<div class="dt-msg ' + cls + '">' + esc(m.text) + atts + actions + '</div>';
+      var atts = m.attachments || [];
+      var images = m.role === 'assistant' ? atts.filter(function (a) { return a.type === 'image'; }) : [];
+      var files = atts.filter(function (a) { return a.type !== 'image'; });
+      var figs = images.map(function (a) { return chatImageFigureHtml(attachmentOpenUrl(a), a.filename || a.name || '生成图'); }).join('');
+      var chips = files.length ? '<div class="dt-msg-atts">' + files.map(function (a) { return attachmentChipHtml(a, false); }).join('') + '</div>' : '';
+      var body = m.role === 'assistant' ? renderAssistantText(m.text) : esc(m.text);
+      return '<div class="dt-msg ' + cls + '">' + body + figs + chips + actions + '</div>';
     }).join('');
     log.scrollTop = log.scrollHeight;
+    scheduleMermaidRender(log);
   }
   async function openSessionHistory() {
     try {
@@ -497,8 +585,8 @@
     var status = a.kbStatus || (a._uploading ? '上传知识库…' : '');
     var cls = /失败|error/i.test(status) ? ' is-err' : (/已送索引|已索引|已归档/.test(status) ? ' is-ok' : '');
     var open = attachmentOpenUrl(a);
-    var thumbSrc = a.previewUrl || ((a.type === 'image' && a.base64) ? ('data:' + (a.mime_type || 'image/png') + ';base64,' + a.base64) : '');
-    var thumb = a.type === 'image' ? '<img class="dt-attach-thumb" src="' + esc(thumbSrc) + '" alt="">' : '';
+    var thumbSrc = a.type === 'image' ? (attachmentOpenUrl(a) || a.previewUrl || '') : '';
+    var thumb = a.type === 'image' && thumbSrc ? '<img class="dt-attach-thumb" src="' + esc(thumbSrc) + '" alt="">' : '';
     var html = '<span class="dt-attach-chip" data-att-id="' + esc(a.id) + '">' +
       thumb +
       '<span class="dt-attach-name" title="' + esc(name) + '">' + esc(name) + '</span>' +

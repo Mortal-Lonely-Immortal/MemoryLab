@@ -207,3 +207,15 @@ html[data-theme="white"] .dt-channel { background: #f4fbff; }
 .dt-clean-toggle { display:flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:8px; letter-spacing:.4px; color:var(--text-dim); cursor:pointer; user-select:none; }
 .dt-clean-toggle input { accent-color:var(--accent); width:12px; height:12px; margin:0; cursor:pointer; }
 .dt-clean-toggle:hover { color:var(--text); }
+
+/* Inline visualizations in tutor answers */
+.dt-msg-figure { margin:12px 0 4px; display:block; max-width:100%; }
+.dt-msg-figure a { display:block; }
+.dt-msg-figure img { display:block; max-width:100%; height:auto; max-height:520px; object-fit:contain; border:1px solid var(--border); background:var(--bg-card); }
+.dt-msg-figure figcaption { margin-top:5px; font-family:var(--font-mono); font-size:8px; line-height:1.4; color:var(--text-dim); }
+.dt-mermaid { margin:12px 0 4px; padding:8px; border:1px solid var(--border); background:var(--bg-card); overflow:auto; max-width:100%; }
+.dt-mermaid.is-rendered { padding:4px; }
+.dt-mermaid svg { display:block; max-width:100%; height:auto; margin:0 auto; }
+.dt-mermaid-src { margin:0; font-family:var(--font-mono); font-size:9px; line-height:1.55; color:var(--text-dim); white-space:pre-wrap; overflow-wrap:anywhere; }
+.dt-mermaid-error { margin-bottom:6px; font-size:9px; color:var(--accent); }
+.dt-msg-assistant .dt-mermaid { background:var(--bg); }
