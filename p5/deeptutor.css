@@ -175,3 +175,27 @@ html[data-theme="white"] .dt-channel { background: #f4fbff; }
 .dt-emb-preset span { display:block; color:var(--text-dim); }
 .dt-emb-preset code { display:block; margin-top:2px; font-family:var(--font-mono); font-size:8px; color:var(--text-dim); word-break:break-all; }
 @media (max-width:700px) { .dt-emb-grid { grid-template-columns:1fr; } }
+
+/* Tutor chat attachments */
+.dt-chat-tools { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.dt-chat-tools .dt-select { max-width:190px; height:30px; font-size:9px; }
+.dt-chat-tools-note { font-family:var(--font-mono); font-size:8px; color:var(--text-dim); line-height:1.5; }
+.dt-chat-pending { display:flex; flex-wrap:wrap; gap:6px; min-height:0; }
+.dt-chat-pending:empty { display:none; }
+.dt-attach-chip { display:flex; align-items:center; gap:7px; max-width:100%; padding:5px 7px; border:1px solid var(--border); background:var(--bg); font-size:9px; line-height:1.35; }
+.dt-attach-chip .dt-attach-name { max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dt-attach-chip small { font-family:var(--font-mono); font-size:8px; color:var(--text-dim); }
+.dt-attach-chip .dt-attach-x { border:0; background:transparent; color:var(--text-dim); cursor:pointer; padding:0 2px; font-size:12px; line-height:1; }
+.dt-attach-chip .dt-attach-x:hover { color:var(--accent); }
+.dt-attach-chip .dt-attach-status { color:var(--text-dim); font-family:var(--font-mono); font-size:8px; }
+.dt-attach-chip .dt-attach-status.is-ok { color:#2e8b57; }
+.dt-attach-chip .dt-attach-status.is-err { color:var(--accent); }
+.dt-msg-atts { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+.dt-msg.user .dt-attach-chip { background:rgba(0,0,0,.18); border-color:rgba(255,255,255,.35); color:#fff; }
+.dt-msg.user .dt-attach-chip small, .dt-msg.user .dt-attach-chip .dt-attach-status { color:rgba(255,255,255,.75); }
+.dt-msg .dt-attach-chip { max-width:100%; }
+.dt-attach-open { color:var(--accent); text-decoration:none; font-family:var(--font-mono); font-size:8px; }
+.dt-attach-open:hover { text-decoration:underline; }
+.dt-attach-index { border:0; background:transparent; color:var(--accent); cursor:pointer; font-family:var(--font-mono); font-size:8px; padding:0; }
+.dt-attach-index:hover { text-decoration:underline; }
+@media (max-width:700px) { .dt-chat-tools .dt-select { max-width:100%; } .dt-chat-tools-note { width:100%; } }

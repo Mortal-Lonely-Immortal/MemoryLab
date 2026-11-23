@@ -2474,7 +2474,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
 </style>
 <link rel="stylesheet" href="teach.css">
 <link rel="stylesheet" href="archive3d.css?v=8">
-<link rel="stylesheet" href="deeptutor.css?v=20261120l">
+<link rel="stylesheet" href="deeptutor.css?v=20261123a">
 <link rel="modulepreload" href="./archive3d.bundle.js?v=24">
 </head>
 <body>
@@ -2538,7 +2538,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
   <div class="nav-tab" data-page="dt-group-library"><span>LIBRARY 资料</span></div>
   <div class="nav-tab" data-page="dt-group-plan"><span>PLAN 计划</span></div>
   <div class="nav-tab" data-page="dt-group-ai"><span>AI 助手</span></div>
-  <div class="nav-ver">P5<b>·</b>V1.0.13</div>
+  <div class="nav-ver">P5<b>·</b>V1.0.14</div>
 </nav>
 
 <main class="main" id="main-content"></main>
@@ -2546,7 +2546,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
 
 <script src="/vendor/echarts.min.js"></script>
 <script src="teach.js"></script>
-<script src="deeptutor.js?v=20261120l"></script>
+<script src="deeptutor.js?v=20261123a"></script>
 <script>
 /* ================================================================
  * DeepTutor — P5 Pentagram UI (r/R=0.45饱满比例, 3层结构)
@@ -4574,7 +4574,7 @@ function applyTheme(theme, persist) {
   }
   document.title = theme === 'white' ? '记忆实验室 · P3' : '记忆实验室 · P5';
   var ver = document.querySelector('.nav-ver');
-  if (ver) ver.innerHTML = theme === 'white' ? 'P3<b>·</b>V1.0.13' : 'P5<b>·</b>V1.0.13';
+  if (ver) ver.innerHTML = theme === 'white' ? 'P3<b>·</b>V1.0.14' : 'P5<b>·</b>V1.0.14';
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = theme === 'white' ? '#eef5f9' : '#0d1718';
   if (document.getElementById('persona-chart') && typeof initPersona === 'function') initPersona();

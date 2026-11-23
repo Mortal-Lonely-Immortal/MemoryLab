@@ -197,7 +197,11 @@
   }
 
   function tutor(content) {
-    if (!state.chat) state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '连接中…', mode: 'chat' };
+    if (!state.chat) state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '连接中…', mode: 'chat', attachments: [], generated: [], kb: '' };
+    if (!state.chat.attachments) state.chat.attachments = [];
+    if (!state.chat.generated) state.chat.generated = [];
+    state.chat._embeddingReady = undefined;
+    if (state.chat.kb === undefined) state.chat.kb = '';
     content.innerHTML =
       '<div class="p5-card">' +
         '<div class="p5-card-header">DEEPTUTOR CHAT 导师' +
@@ -210,6 +214,13 @@
               return '<button class="dt-tab' + (state.chat.mode === m ? ' is-active' : '') + '" data-dt-mode="' + m + '" onclick="DTWorkspace.setChatMode(\'' + m + '\')">' + m.toUpperCase() + '</button>';
             }).join('') +
           '</div>' +
+          '<div class="dt-chat-tools">' +
+            '<button class="btn btn-sm btn-primary" onclick="DTWorkspace.chooseChatAttachments()">+ ATTACH 附件</button>' +
+            '<input type="file" id="dt-chat-file" multiple hidden accept=".pdf,.doc,.docx,.ppt,.pptx,.md,.markdown,.txt,.epub,.png,.jpg,.jpeg,.webp,.gif" onchange="DTWorkspace.chatFilesSelected(this)">' +
+            '<select class="dt-select" id="dt-chat-kb" onchange="DTWorkspace.setChatKb(this.value)"><option value="__tutor__">Tutor 附件（自动索引）</option></select>' +
+            '<span class="dt-chat-tools-note" id="dt-chat-kb-note">附件加入当前对话工作区，并同步索引到所选知识库</span>' +
+          '</div>' +
+          '<div class="dt-chat-pending" id="dt-chat-pending"></div>' +
           '<div class="dt-chat-input"><input class="dt-input" id="dt-chat-text" placeholder="问课程、题目、文档，或让它制定学习路径…" autocomplete="off"><button class="btn btn-primary" id="dt-chat-send" onclick="DTWorkspace.sendChat()">SEND 发送</button></div>' +
           '<div class="dt-note" id="dt-chat-status">' + esc(state.chat.status) + '</div>' +
         '</div>' +
@@ -217,6 +228,8 @@
     var input = document.getElementById('dt-chat-text');
     if (input) input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
     paintChat();
+    paintChatPending();
+    loadChatKbs();
     connectChat();
     if (window.__dtPendingMode) { setChatMode(window.__dtPendingMode); window.__dtPendingMode = null; }
   }
@@ -231,7 +244,8 @@
     log.innerHTML = state.chat.messages.map(function (m, i) {
       var cls = m.role === 'user' ? 'user' : (m.role === 'sys' ? 'sys' : '');
       var actions = m.role === 'assistant' && m.text ? '<div class="dt-msg-actions"><button class="dt-mini-btn" onclick="DTWorkspace.saveChatToNotebook(' + i + ')">SAVE TO NOTEBOOK 保存</button></div>' : '';
-      return '<div class="dt-msg ' + cls + '">' + esc(m.text) + actions + '</div>';
+      var atts = (m.attachments && m.attachments.length) ? '<div class="dt-msg-atts">' + m.attachments.map(function (a) { return attachmentChipHtml(a, false); }).join('') + '</div>' : '';
+      return '<div class="dt-msg ' + cls + '">' + esc(m.text) + atts + actions + '</div>';
     }).join('');
     log.scrollTop = log.scrollHeight;
   }
@@ -270,6 +284,8 @@
       state.chat.sessionId = id;
       state.chat.mode = 'chat';
       state.chat.masteryPathId = null;
+      state.chat.attachments = [];
+      state.chat.generated = [];
       state.chat.messages = (s.messages || []).map(function (m) {
         return { role: (m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'sys' : 'user')), text: m.content || m.text || '' };
       }).filter(function (m) { return m.text; });
@@ -365,6 +381,8 @@
       var d;
       try { d = JSON.parse(ev.data); } catch (e) { return; }
       if (d.session_id && !state.chat.sessionId) state.chat.sessionId = d.session_id;
+      if (d.workspace_id) state.chat.workspaceId = d.workspace_id;
+      collectChatGenerated(d);
       if (d.type === 'session') { if (d.session_id) state.chat.sessionId = d.session_id; setChatStatus('会话 ' + d.session_id); return; }
       if (d.type === 'content' && d.content) {
         var last = state.chat.messages[state.chat.messages.length - 1];
@@ -390,26 +408,298 @@
       }
     };
   }
+
+  // ------------------------------------------------------------
+  // Tutor chat attachments: base64 goes into the same WS turn so
+  // DeepTutor can read it; the original file is also sent to a KB
+  // so later sessions can retrieve it.
+  // ------------------------------------------------------------
+  function chatAttachmentId() {
+    return 'att_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
+  function fmtBytes(n) {
+    n = Number(n || 0);
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' KB';
+    return (n / 1024 / 1024).toFixed(1) + ' MB';
+  }
+  function chatFileMime(name) {
+    var ext = String(name || '').split('.').pop().toLowerCase();
+    var map = {pdf:'application/pdf', doc:'application/msword', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ppt:'application/vnd.ms-powerpoint', pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      md:'text/markdown', markdown:'text/markdown', txt:'text/plain', epub:'application/epub+zip',
+      png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', webp:'image/webp', gif:'image/gif'};
+    return map[ext] || 'application/octet-stream';
+  }
+  function readChatFileBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var raw = String(reader.result || '');
+        var cut = raw.indexOf(',');
+        resolve(cut >= 0 ? raw.slice(cut + 1) : raw);
+      };
+      reader.onerror = function () { reject(reader.error || new Error('读取附件失败')); };
+      reader.readAsDataURL(file);
+    });
+  }
+  function attachmentOpenUrl(a) {
+    if (!a) return '';
+    if (a.url) {
+      var u = String(a.url);
+      if (/^(https?:|data:|blob:)/i.test(u)) return u;
+      if (u.indexOf('/dt-api/') === 0) return u;
+      return '/dt-api' + (u.charAt(0) === '/' ? '' : '/') + u;
+    }
+    if (a.workspace_item_id && (a.workspace_id || (state.chat && state.chat.workspaceId))) {
+      var wid = a.workspace_id || state.chat.workspaceId;
+      return '/dt-api/files/workspace-items/' + encodeURIComponent(wid) + '/' + encodeURIComponent(a.workspace_item_id);
+    }
+    return '';
+  }
+  function attachmentChipHtml(a, pending) {
+    var name = a.filename || a.name || 'attachment';
+    var status = a.kbStatus || (a._uploading ? '上传知识库…' : '');
+    var cls = /失败|error/i.test(status) ? ' is-err' : (/已送索引|已索引|已归档/.test(status) ? ' is-ok' : '');
+    var open = attachmentOpenUrl(a);
+    var html = '<span class="dt-attach-chip" data-att-id="' + esc(a.id) + '">' +
+      '<span class="dt-attach-name" title="' + esc(name) + '">' + esc(name) + '</span>' +
+      '<small>' + esc(fmtBytes(a.size)) + '</small>' +
+      (status ? '<span class="dt-attach-status' + cls + '">' + esc(status) + '</span>' : '') +
+      (open ? '<a class="dt-attach-open" href="' + esc(open) + '" target="_blank" rel="noopener">OPEN</a>' : '') +
+      (!pending && !/已送索引/.test(status) && !a._uploading ? '<button class="dt-attach-index" onclick="DTWorkspace.indexChatAttachment(\'' + esc(a.id) + '\')">INDEX 索引</button>' : '') +
+      (pending ? '<button class="dt-attach-x" title="移除" onclick="DTWorkspace.removeChatAttachment(\'' + esc(a.id) + '\')">×</button>' : '') +
+      '</span>';
+    return html;
+  }
+  function paintChatPending() {
+    var el = document.getElementById('dt-chat-pending');
+    if (!el || !state.chat) return;
+    var list = state.chat.attachments || [];
+    el.innerHTML = list.map(function (a) { return attachmentChipHtml(a, true); }).join('');
+  }
+  async function loadChatKbs() {
+    var sel = document.getElementById('dt-chat-kb');
+    if (!sel || !state.chat) return;
+    if (!state.chat.kb) {
+      try { state.chat.kb = localStorage.getItem('memoryLab.chat.kb') || '__tutor__'; } catch (e) { state.chat.kb = '__tutor__'; }
+    }
+    var names = [];
+    try {
+      var data = await dtApi('/api/knowledge-bases');
+      var list = Array.isArray(data) ? data : [];
+      names = list.map(function (k) { return k.name || k.kb_name || k.id; }).filter(Boolean);
+    } catch (e) {}
+    if (state.chat.kb !== '__tutor__' && names.indexOf(state.chat.kb) < 0) state.chat.kb = '__tutor__';
+    var html = '<option value="__tutor__">Tutor 附件（自动索引）</option>';
+    names.forEach(function (n) { html += '<option value="' + esc(n) + '">' + esc(n) + '</option>'; });
+    sel.innerHTML = html;
+    sel.value = state.chat.kb || '__tutor__';
+    var note = document.getElementById('dt-chat-kb-note');
+    if (note) {
+      var ready = await chatEmbeddingReady();
+      note.textContent = ready ? '附件进入当前对话工作区，并同步索引到所选知识库' : '附件会进入工作区并归档到知识库；未配置 Embedding 时暂不建向量索引';
+      note.style.color = ready ? '' : 'var(--accent)';
+    }
+  }
+  function setChatKb(value) {
+    if (!state.chat) return;
+    state.chat.kb = value || '__tutor__';
+    try { localStorage.setItem('memoryLab.chat.kb', state.chat.kb); } catch (e) {}
+  }
+  function chooseChatAttachments() {
+    var input = document.getElementById('dt-chat-file');
+    if (input) input.click();
+  }
+  async function chatFilesSelected(input) {
+    if (!input || !input.files || !state.chat) return;
+    var files = Array.prototype.slice.call(input.files);
+    input.value = '';
+    if (!state.chat.attachments) state.chat.attachments = [];
+    if (!state.chat.maxFileBytes) state.chat.maxFileBytes = 20 * 1024 * 1024;
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (state.chat.attachments.length >= 5) { toast('一次最多 5 个附件', 'error'); break; }
+      if (f.size > state.chat.maxFileBytes) { toast('附件超过 20MB：' + f.name, 'error'); continue; }
+      var a = { id: chatAttachmentId(), file: f, filename: f.name, name: f.name, size: f.size,
+        mime_type: f.type || chatFileMime(f.name), type: /^image\//i.test(f.type || '') ? 'image' : 'file',
+        base64: '', kbStatus: '读取中…' };
+      state.chat.attachments.push(a);
+      paintChatPending();
+      try {
+        a.base64 = await readChatFileBase64(f);
+        a.kbStatus = '待索引';
+        paintChatPending();
+        uploadAttachmentToKb(a);
+      } catch (e) {
+        a.kbStatus = '读取失败：' + e.message;
+        paintChatPending();
+      }
+    }
+  }
+  function removeChatAttachment(id) {
+    if (!state.chat) return;
+    state.chat.attachments = (state.chat.attachments || []).filter(function (a) { return a.id !== id; });
+    paintChatPending();
+  }
+  async function ensureChatKb() {
+    if (!state.chat) throw new Error('聊天未初始化');
+    if (state.chat.kb && state.chat.kb !== '__tutor__') return state.chat.kb;
+    var data = await dtApi('/api/knowledge-bases');
+    var list = Array.isArray(data) ? data : [];
+    var name = 'Tutor 附件';
+    var found = list.some(function (k) { return (k.name || k.kb_name) === name; });
+    if (!found) {
+      var fd = new FormData();
+      fd.append('name', name);
+      fd.append('rag_provider', 'llamaindex');
+      await dtApi('/api/knowledge-bases', { method: 'POST', body: fd });
+    }
+    state.chat.kb = name;
+    try { localStorage.setItem('memoryLab.chat.kb', name); } catch (e) {}
+    var sel = document.getElementById('dt-chat-kb');
+    if (sel) {
+      if (!Array.prototype.some.call(sel.options, function (o) { return o.value === name; })) {
+        var opt = document.createElement('option'); opt.value = name; opt.textContent = name; sel.appendChild(opt);
+      }
+      sel.value = name;
+    }
+    return name;
+  }
+  async function attachmentBlob(a) {
+    if (a.file) return a.file;
+    if (a.blob) return a.blob;
+    if (a.base64) {
+      var bin = atob(a.base64);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      a.blob = new Blob([bytes], { type: a.mime_type || chatFileMime(a.filename) });
+      return a.blob;
+    }
+    var url = attachmentOpenUrl(a);
+    if (!url) throw new Error('没有可读取的文件地址');
+    var resp = await fetch(url);
+    if (!resp.ok) throw new Error('读取产出文件失败 HTTP ' + resp.status);
+    a.blob = await resp.blob();
+    return a.blob;
+  }
+  async function uploadAttachmentToKb(a) {
+    if (!a || a._uploading) return;
+    a._uploading = true;
+    a.kbStatus = '准备上传知识库…';
+    paintChatPending();
+    try {
+      var kb = await ensureChatKb();
+      var blob = await attachmentBlob(a);
+      a.kb = kb;
+      a.kbStatus = '上传知识库…';
+      paintChatPending();
+      var fd = new FormData();
+      fd.append('files', blob, a.filename || a.name || 'attachment');
+      fd.append('rel_paths', a.filename || a.name || 'attachment');
+      await dtApi('/api/knowledge-bases/' + encodeURIComponent(kb) + '/upload', { method: 'POST', body: fd });
+      var ready = await chatEmbeddingReady();
+      a.kbStatus = ready ? ('已送索引 · ' + kb) : '已归档 · 未配置Embedding';
+    } catch (e) {
+      a.kbStatus = '索引失败：' + e.message;
+    }
+    a._uploading = false;
+    paintChatPending();
+    paintChat();
+  }
+  async function indexChatAttachment(id) {
+    if (!state.chat) return;
+    var a = (state.chat.generated || []).filter(function (x) { return x.id === id; })[0];
+    if (!a) return;
+    await uploadAttachmentToKb(a);
+    paintChat();
+  }
+  async function chatEmbeddingReady() {
+    if (state.chat && state.chat._embeddingReady !== undefined) return state.chat._embeddingReady;
+    var ready = false;
+    try {
+      var st = await dtApi('/api/system/status');
+      var e = (st && st.embeddings) || {};
+      ready = e.status === 'configured';
+    } catch (e) {}
+    if (state.chat) state.chat._embeddingReady = ready;
+    return ready;
+  }
+  function chatAttachmentFromEvent(a) {
+    if (!a || typeof a !== 'object') return null;
+    var filename = a.filename || a.name || a.title || '';
+    if (!filename) return null;
+    if (!a.base64 && !a.url && !a.workspace_item_id) return null;
+    var id = a.id || ('gen_' + filename + '_' + (a.workspace_item_id || a.url || ''));
+    return { id: String(id), filename: String(filename), name: String(filename), size: a.size_bytes || a.size || 0,
+      mime_type: a.mime_type || a.mimeType || chatFileMime(filename), base64: a.base64 || '', url: a.url || '',
+      workspace_id: a.workspace_id || '', workspace_item_id: a.workspace_item_id || '',
+      type: /^image\//i.test(a.mime_type || a.mimeType || '') ? 'image' : 'file',
+      generated: true, kbStatus: '' };
+  }
+  function collectChatGenerated(d) {
+    if (!state.chat) return [];
+    var found = [];
+    var m = d.metadata || {};
+    var lists = [m.workspace_items, m.artifacts, m.files, m.attachments, d.workspace_items, d.artifacts, d.files, d.output_files];
+    if (d.artifact) lists.push([d.artifact]);
+    if (d.result && typeof d.result === 'object') lists = lists.concat([d.result.workspace_items, d.result.artifacts, d.result.attachments, d.result.files, d.result.output_files]);
+    if (Array.isArray(d.attachments)) lists.push(d.attachments.filter(function (a) { return a && (a.generated || a.workspace_item_id); }));
+    lists.forEach(function (list) {
+      if (!Array.isArray(list)) return;
+      list.forEach(function (raw) {
+        var a = chatAttachmentFromEvent(raw);
+        if (!a) return;
+        if ((state.chat.generated || []).some(function (x) { return x.id === a.id || (x.filename === a.filename && x.url === a.url); })) return;
+        found.push(a);
+      });
+    });
+    if (!found.length) return [];
+    state.chat.generated = state.chat.generated || [];
+    state.chat.generated = state.chat.generated.concat(found);
+    var last = state.chat.messages[state.chat.messages.length - 1];
+    if (!last || last.role !== 'assistant') {
+      last = { role: 'assistant', text: '', attachments: [] };
+      state.chat.messages.push(last);
+    }
+    last.attachments = (last.attachments || []).concat(found);
+    found.forEach(function (a) {
+      if (/\.(pdf|docx?|pptx?|md|markdown|txt|epub)$/i.test(a.filename)) uploadAttachmentToKb(a);
+    });
+    paintChat();
+    return found;
+  }
+
   function sendChat() {
     if (!state.chat || state.chat.busy) return;
     var input = document.getElementById('dt-chat-text');
     var text = input ? input.value.trim() : '';
-    if (!text) return;
+    var atts = (state.chat.attachments || []).slice();
+    if (!text && !atts.length) return;
+    if (atts.some(function (a) { return !a.base64; })) { toast('附件还在读取，请稍等一秒再发送', 'error'); return; }
+    if (!text) text = '请读取并分析我附上的文件，给出要点、结构和可执行的下一步。';
     input.value = '';
-    state.chat.messages.push({ role: 'user', text: text });
+    state.chat.messages.push({ role: 'user', text: text, attachments: atts });
     state.chat.busy = true;
     setChatStatus('DeepTutor 思考中…');
     paintChat();
     connectChat();
+    var kb = state.chat.kb && state.chat.kb !== '__tutor__' ? state.chat.kb : '';
     var send = function () {
       if (!state.chat.socket || state.chat.socket.readyState !== 1) { setChatStatus('正在连接…'); setTimeout(send, 500); return; }
       var turn = {
         type: 'start_turn', protocol_version: '2.0', content: text, capability: state.chat.mode || 'chat',
-        session_id: state.chat.sessionId || null, language: 'Chinese'
+        session_id: state.chat.sessionId || null, language: 'Chinese',
+        attachments: atts.map(function (a) {
+          return { type: a.type || 'file', filename: a.filename, base64: a.base64, mime_type: a.mime_type || chatFileMime(a.filename) };
+        }),
+        knowledge_bases: kb ? [kb] : []
       };
       if (state.chat.masteryPathId) { turn.mastery_path_id = state.chat.masteryPathId; turn.mastery_session_mode = 'study'; turn.workspace_mode = 'mastery'; }
       state.chat.socket.send(JSON.stringify(turn));
     };
+    state.chat.attachments = [];
+    paintChatPending();
     send();
   }
   function setChatMode(mode) {
@@ -432,7 +722,8 @@
   }
   function newChat() {
     if (state.chat && state.chat.socket) { try { state.chat.socket.close(); } catch (e) {} }
-    state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '新会话', mode: 'chat', masteryPathId: null };
+    var keepKb = state.chat ? state.chat.kb : '';
+    state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '新会话', mode: 'chat', masteryPathId: null, attachments: [], generated: [], kb: keepKb };
     var content = document.getElementById('dt-content');
     if (content) tutor(content);
   }
@@ -1897,6 +2188,8 @@
     newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
     newNotebookRecord: newNotebookRecord, createNotebookRecord: createNotebookRecord, deleteNotebookRecord: deleteNotebookRecord, exportNotebook: exportNotebook,
     sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
+    chooseChatAttachments: chooseChatAttachments, chatFilesSelected: chatFilesSelected, setChatKb: setChatKb,
+    removeChatAttachment: removeChatAttachment, indexChatAttachment: indexChatAttachment,
     newEvent: newEvent, createEvent: createEvent, newTask: newTask, createTask: createTask,
     newMastery: newMastery, createMastery: createMastery, openMastery: openMastery, studyMastery: studyMastery,
     newBook: newBook, createBook: createBook, openBook: openBook, openBookProposal: openBookProposal, openProposalById: openProposalById, confirmBookProposal: confirmBookProposal, buildBookSpine: buildBookSpine, openBookPage: openBookPage,
