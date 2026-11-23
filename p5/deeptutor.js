@@ -3,6 +3,30 @@
   'use strict';
   var API = '/dt-api';
   var state = { section: 'overview', content: null };
+  var CLEAN_PERSONA_NAME = 'memorylab-clean';
+  var CLEAN_PERSONA_DESC = 'Memory Lab 简洁讲解风格';
+  var CLEAN_PERSONA = [
+    '---',
+    'name: memorylab-clean',
+    'description: Memory Lab 简洁讲解风格',
+    '---',
+    '',
+    '# 角色',
+    '你是 Memory Lab 的中文学习导师。',
+    '',
+    '# 表达规则',
+    '1. 默认用简体中文，短句。一句话只表达一个意思。',
+    '2. 先给结论，再给理由和证据。技术分析按三步组织：观察到什么，为什么，得到什么结论。',
+    '3. 少用装饰性 Markdown。不要使用加粗、斜体、反引号、美元符号、长破折号、箭头、连续括号。',
+    '4. 命令、代码、地址可以单独成行。表格只在确实需要比较时使用，列数尽量少。',
+    '5. 不堆术语，不空泛，不重复问题，不写“如图所示”。',
+    '6. 不确定的内容标为待填或需要验证，不编造数字。',
+    '',
+    '# 实验报告类',
+    '1. 先说明环境差异。',
+    '2. 每一项按观察、原因、结论三步写。',
+    '3. 表格只保留必要列。'
+  ].join('\n');
 
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
@@ -200,6 +224,9 @@
     if (!state.chat) state.chat = { messages: [], sessionId: null, socket: null, busy: false, status: '连接中…', mode: 'chat', attachments: [], generated: [], kb: '' };
     if (!state.chat.attachments) state.chat.attachments = [];
     if (!state.chat.generated) state.chat.generated = [];
+    if (state.chat.clean === undefined) {
+      try { state.chat.clean = localStorage.getItem('memoryLab.chat.clean') !== '0'; } catch (e) { state.chat.clean = true; }
+    }
     state.chat._embeddingReady = undefined;
     if (state.chat.kb === undefined) state.chat.kb = '';
     content.innerHTML =
@@ -220,6 +247,7 @@
             '<input type="file" id="dt-chat-file" multiple hidden accept=".pdf,.doc,.docx,.ppt,.pptx,.md,.markdown,.txt,.epub,.png,.jpg,.jpeg,.webp,.gif" onchange="DTWorkspace.chatFilesSelected(this)">' +
             '<input type="file" id="dt-image-file" multiple hidden accept="image/*" onchange="DTWorkspace.chatImagesSelected(this)">' +
             '<select class="dt-select" id="dt-chat-kb" onchange="DTWorkspace.setChatKb(this.value)"><option value="__tutor__">Tutor 附件（自动索引）</option></select>' +
+            '<label class="dt-clean-toggle" title="短句、少符号、先结论后证据"><input type="checkbox" id="dt-chat-clean"' + (state.chat.clean !== false ? ' checked' : '') + ' onchange="DTWorkspace.setChatClean(this.checked)"> CLEAN 简洁</label>' +
             '<span class="dt-chat-tools-note" id="dt-chat-kb-note">附件加入当前对话工作区，并同步索引到所选知识库</span>' +
           '</div>' +
           '<div class="dt-chat-pending" id="dt-chat-pending"></div>' +
@@ -235,6 +263,7 @@
     paintChat();
     paintChatPending();
     loadChatKbs();
+    if (state.chat.clean !== false) ensureCleanPersona();
     connectChat();
     if (window.__dtPendingMode) { setChatMode(window.__dtPendingMode); window.__dtPendingMode = null; }
   }
@@ -516,6 +545,37 @@
     state.chat.kb = value || '__tutor__';
     try { localStorage.setItem('memoryLab.chat.kb', state.chat.kb); } catch (e) {}
   }
+  function setChatClean(on) {
+    if (!state.chat) return;
+    state.chat.clean = !!on;
+    try { localStorage.setItem('memoryLab.chat.clean', state.chat.clean ? '1' : '0'); } catch (e) {}
+    if (state.chat.clean) ensureCleanPersona();
+  }
+  async function ensureCleanPersona() {
+    if (!state.chat) return false;
+    if (state.chat.personaReady) return true;
+    if (state.chat._personaPromise) return state.chat._personaPromise;
+    state.chat._personaPromise = (async function () {
+      try {
+        var list = await dtApi('/api/personas');
+        var exists = ((list && list.personas) || []).some(function (p) { return p && p.name === CLEAN_PERSONA_NAME; });
+        var body = JSON.stringify({ name: CLEAN_PERSONA_NAME, description: CLEAN_PERSONA_DESC, content: CLEAN_PERSONA });
+        if (exists) {
+          await dtApi('/api/personas/' + encodeURIComponent(CLEAN_PERSONA_NAME), { method: 'PUT', body: JSON.stringify({ description: CLEAN_PERSONA_DESC, content: CLEAN_PERSONA }) });
+        } else {
+          await dtApi('/api/personas', { method: 'POST', body: body });
+        }
+        state.chat.personaReady = true;
+        return true;
+      } catch (e) {
+        state.chat.personaReady = false;
+        return false;
+      } finally {
+        state.chat._personaPromise = null;
+      }
+    })();
+    return state.chat._personaPromise;
+  }
   function chooseChatAttachments() {
     var input = document.getElementById('dt-chat-file');
     if (input) input.click();
@@ -712,7 +772,7 @@
     return found;
   }
 
-  function sendChat() {
+  async function sendChat() {
     if (!state.chat || state.chat.busy) return;
     var input = document.getElementById('dt-chat-text');
     var text = input ? input.value.trim() : '';
@@ -726,6 +786,12 @@
     setChatStatus('DeepTutor 思考中…');
     paintChat();
     connectChat();
+    var clean = state.chat.clean !== false;
+    if (clean && !state.chat.personaReady) {
+      setChatStatus('准备简洁讲解风格…');
+      var ready = await ensureCleanPersona();
+      if (!ready) toast('简洁风格未准备好，先按普通风格回答', 'error');
+    }
     var kb = state.chat.kb && state.chat.kb !== '__tutor__' ? state.chat.kb : '';
     var send = function () {
       if (!state.chat.socket || state.chat.socket.readyState !== 1) { setChatStatus('正在连接…'); setTimeout(send, 500); return; }
@@ -737,6 +803,7 @@
         }),
         knowledge_bases: kb ? [kb] : []
       };
+      if (clean && state.chat.personaReady) turn.persona = CLEAN_PERSONA_NAME;
       if (state.chat.masteryPathId) { turn.mastery_path_id = state.chat.masteryPathId; turn.mastery_session_mode = 'study'; turn.workspace_mode = 'mastery'; }
       state.chat.socket.send(JSON.stringify(turn));
     };
@@ -2230,7 +2297,7 @@
     newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
     newNotebookRecord: newNotebookRecord, createNotebookRecord: createNotebookRecord, deleteNotebookRecord: deleteNotebookRecord, exportNotebook: exportNotebook,
     sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
-    chooseChatAttachments: chooseChatAttachments, chooseChatImages: chooseChatImages, chatFilesSelected: chatFilesSelected, chatImagesSelected: chatImagesSelected, setChatKb: setChatKb,
+    chooseChatAttachments: chooseChatAttachments, chooseChatImages: chooseChatImages, chatFilesSelected: chatFilesSelected, chatImagesSelected: chatImagesSelected, setChatKb: setChatKb, setChatClean: setChatClean,
     removeChatAttachment: removeChatAttachment, indexChatAttachment: indexChatAttachment,
     newEvent: newEvent, createEvent: createEvent, newTask: newTask, createTask: createTask,
     newMastery: newMastery, createMastery: createMastery, openMastery: openMastery, studyMastery: studyMastery,
