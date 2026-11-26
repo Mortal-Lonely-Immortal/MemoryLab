@@ -27,10 +27,13 @@ public class CardController {
     @GetMapping
     public Result<PageResult<Views.CardView>> page(@RequestParam(defaultValue = "1") long page,
                                                    @RequestParam(defaultValue = "20") long size,
+                                                   @RequestParam(required = false) Long bookId,
                                                    @RequestParam(required = false) Long deckId,
                                                    @RequestParam(required = false) String keyword,
-                                                   @RequestParam(required = false) Integer state) {
-        return Result.ok(cardService.page(page, size, deckId, keyword, state));
+                                                   @RequestParam(required = false) Integer state,
+                                                   @RequestParam(required = false) Boolean favorite,
+                                                   @RequestParam(required = false) Boolean wrong) {
+        return Result.ok(cardService.page(page, size, bookId, deckId, keyword, state, favorite, wrong));
     }
 
     @GetMapping("/{id}")
@@ -52,6 +55,27 @@ public class CardController {
     public Result<Void> delete(@PathVariable Long id) {
         cardService.delete(id);
         return Result.ok();
+    }
+
+    @PostMapping("/batch-delete")
+    public Result<Integer> batchDelete(@RequestBody Dtos.CardBatchDelete req) {
+        return Result.ok(cardService.deleteBatch(req.ids()));
+    }
+
+    @PostMapping("/batch-delete-filter")
+    public Result<Integer> batchDeleteFilter(@RequestBody Dtos.CardFilter req) {
+        return Result.ok(cardService.deleteByFilter(req));
+    }
+
+    @PostMapping("/reclassify")
+    public Result<Integer> reclassify() {
+        return Result.ok(cardService.reclassify());
+    }
+
+    @PostMapping("/{id}/favorite")
+    public Result<Views.CardView> favorite(@PathVariable Long id,
+                                            @RequestParam(defaultValue = "true") boolean favorite) {
+        return Result.ok(cardService.favorite(id, favorite));
     }
 
     @PostMapping("/{id}/suspend")

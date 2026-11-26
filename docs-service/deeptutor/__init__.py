@@ -19,11 +19,9 @@ def create_app():
 
     from deeptutor.routes.api_documents import documents_bp
     from deeptutor.routes.api_tutor import tutor_bp
-    from deeptutor.routes.api_music import music_bp
 
     app.register_blueprint(tutor_bp, url_prefix="/api/tutor")
     app.register_blueprint(documents_bp, url_prefix="/api/documents")
-    app.register_blueprint(music_bp, url_prefix="/api/music")
 
     @app.get("/api/health")
     def health():

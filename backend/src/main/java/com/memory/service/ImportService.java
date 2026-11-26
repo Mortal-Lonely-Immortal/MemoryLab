@@ -31,6 +31,7 @@ import java.util.List;
 public class ImportService {
 
     private final DocxImporter docxImporter;
+    private final CardClassificationService classificationService;
     private final NoteMapper noteMapper;
     private final CardMapper cardMapper;
     private final DeckMapper deckMapper;
@@ -71,7 +72,9 @@ public class ImportService {
                 }
                 Note note = new Note();
                 note.setUserId(1L);
-                note.setDeckId(deckFor(n.chapter(), deckCache));
+                String book = classificationService.bookFromSource(n.source(), filename);
+                String chapterName = classificationService.chapterLabel(n.chapter(), n.source());
+                note.setDeckId(classificationService.ensureBookChapter(book, chapterName));
                 note.setTitle(n.title());
                 note.setContentMd(buildContent(n));
                 note.setSource(n.source());
@@ -173,6 +176,11 @@ public class ImportService {
     private int createCards(Note note, ParsedNote n) {
         int count = 0;
         java.util.Set<String> seen = new java.util.HashSet<>();
+        // New atomic Q/A notes: one explicit question, one focused answer.
+        if (n.question() != null && !n.question().isBlank()
+                && n.answer() != null && !n.answer().isBlank()) {
+            return insertCard(note, "QA", n.question().trim(), n.answer().trim(), "原子知识点", seen);
+        }
         if (n.oneLiner() != null && !n.oneLiner().isBlank()) {
             count += insertCard(note, "QA", "「" + n.title() + "」的核心结论是什么？",
                     n.oneLiner(), "一句话", seen);
@@ -258,6 +266,12 @@ public class ImportService {
     private static String buildContent(ParsedNote n) {
         StringBuilder sb = new StringBuilder();
         sb.append("## ").append(n.title()).append("\n\n");
+        if (n.question() != null) {
+            sb.append("**Q**：").append(n.question()).append("\n\n");
+        }
+        if (n.answer() != null) {
+            sb.append("**A**：").append(n.answer()).append("\n\n");
+        }
         if (n.oneLiner() != null) {
             sb.append("**一句话**：").append(n.oneLiner()).append("\n\n");
         }

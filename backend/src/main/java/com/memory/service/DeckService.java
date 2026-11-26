@@ -27,15 +27,31 @@ public class DeckService {
                 .eq(Deck::getUserId, 1L)
                 .orderByAsc(Deck::getSortOrder)
                 .orderByAsc(Deck::getId));
-        List<Views.DeckView> out = new ArrayList<>(decks.size());
+        java.util.Map<Long, Long> direct = new java.util.HashMap<>();
+        java.util.Map<Long, java.util.List<Long>> children = new java.util.HashMap<>();
         for (Deck d : decks) {
             long count = cardMapper.selectCount(new LambdaQueryWrapper<Card>()
                     .eq(Card::getUserId, 1L)
                     .eq(Card::getDeckId, d.getId())
                     .eq(Card::getSuspended, 0));
-            out.add(new Views.DeckView(d.getId(), d.getParentId(), d.getName(), d.getDescription(), (int) count));
+            direct.put(d.getId(), count);
+            children.computeIfAbsent(d.getParentId(), k -> new ArrayList<>()).add(d.getId());
+        }
+        List<Views.DeckView> out = new ArrayList<>(decks.size());
+        for (Deck d : decks) {
+            long total = totalCount(d.getId(), direct, children);
+            out.add(new Views.DeckView(d.getId(), d.getParentId(), d.getName(), d.getDescription(), (int) total));
         }
         return out;
+    }
+
+    private static long totalCount(Long id, java.util.Map<Long, Long> direct,
+                                   java.util.Map<Long, java.util.List<Long>> children) {
+        long total = direct.getOrDefault(id, 0L);
+        for (Long child : children.getOrDefault(id, java.util.List.of())) {
+            total += totalCount(child, direct, children);
+        }
+        return total;
     }
 
     @Transactional

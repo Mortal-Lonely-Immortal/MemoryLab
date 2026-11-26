@@ -33,6 +33,10 @@ public class Card {
     private Integer learningStep;
     private Integer suspended;
     private Integer leech;
+    private Integer favorite;
+    private Integer wrong;
+    private Integer wrongCount;
+    private LocalDateTime lastWrongAt;
     private Integer version;
 
     private LocalDateTime createdAt;

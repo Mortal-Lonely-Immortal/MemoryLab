@@ -525,3 +525,9 @@ MVP 简化：不实现 Anki 的多步学习步骤，只用“Again → 10 分钟
 7. FSRS 算法文档（v4.5）：https://github.com/SqueakyRobot/fsrs/blob/main/docs/ALGORITHM.md
 8. FSRS for Anki Wiki：https://github.com/open-spaced-repetition/fsrs4anki/wiki
 9. RemNote: Spaced Repetition Algorithms: FSRS vs SM-2 vs SM-18：https://www.remnote.com/blog/spaced-repetition-algorithms
+
+---
+
+## 绘图方案
+
+六类图（用例图、平台架构图、领域关系图、ER 图、核心类图、时序图）均为 Python 代码生成，不使用 Mermaid / Visio / Draw.io。工具链、四个绘图原语、生成命令和自检流程见 [绘图方案](绘图方案.md)。

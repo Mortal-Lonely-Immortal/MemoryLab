@@ -1,11 +1,4 @@
 {
-  "llm": {
-    "provider": "custom",
-    "model": "deepseek-v4.1-flash",
-    "base_url": "https://opencode.ai/inference/go/openai/v1",
-    "api_key_env": "MEMORYLAB_LLM_KEY",
-    "api_format": "openai_chat"
-  },
   "system": {
     "backend_port": 8001,
     "frontend_port": 3782

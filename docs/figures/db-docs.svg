@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1950" height="950" viewBox="0 0 1950 950">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="80.00" y="80.00" width="360.00" height="133.00" fill="white" stroke="#2E5E8C" stroke-width="1.5"/>
+<rect x="80.00" y="80.00" width="360.00" height="46.00" fill="#E8F1FB" stroke="#2E5E8C" stroke-width="1.5"/>
+<text x="260.00" y="103.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#123B5E" text-anchor="middle" dominant-baseline="central" font-weight="bold">用户表 users</text>
+<text x="90.00" y="140.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  id : INTEGER  主键</text>
+<line x1="88.00" y1="153.00" x2="432.00" y2="153.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="165.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">name : TEXT  用户名</text>
+<line x1="88.00" y1="178.00" x2="432.00" y2="178.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="190.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">registered : INTEGER  已注册</text>
+<line x1="88.00" y1="203.00" x2="432.00" y2="203.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<rect x="600.00" y="80.00" width="460.00" height="245.00" fill="white" stroke="#A9762A" stroke-width="1.5"/>
+<rect x="600.00" y="80.00" width="460.00" height="46.00" fill="#FDF1DC" stroke="#A9762A" stroke-width="1.5"/>
+<text x="830.00" y="103.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#6B4410" text-anchor="middle" dominant-baseline="central" font-weight="bold">教材表 documents</text>
+<text x="610.00" y="140.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  id : INTEGER  主键</text>
+<line x1="608.00" y1="153.00" x2="1052.00" y2="153.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="165.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  user_id : INTEGER  所属用户</text>
+<line x1="608.00" y1="178.00" x2="1052.00" y2="178.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="190.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">filename / original_name  存储名/原名</text>
+<line x1="608.00" y1="203.00" x2="1052.00" y2="203.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="215.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">file_type : TEXT  文件类型</text>
+<line x1="608.00" y1="228.00" x2="1052.00" y2="228.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="240.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">status : TEXT  上传/处理/完成/错误</text>
+<line x1="608.00" y1="253.00" x2="1052.00" y2="253.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="265.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">total_chapters / processed_chapters  章节</text>
+<line x1="608.00" y1="278.00" x2="1052.00" y2="278.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="290.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">created_at : TIMESTAMP  上传时间</text>
+<line x1="608.00" y1="303.00" x2="1052.00" y2="303.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<line x1="600.00" y1="301.00" x2="1060.00" y2="301.00" stroke="#A9762A" stroke-width="0.8" stroke-linecap="round"/>
+<text x="610.00" y="313.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#7F8C8D" text-anchor="start" dominant-baseline="central">FK(user_id)</text>
+<rect x="600.00" y="500.00" width="460.00" height="245.00" fill="white" stroke="#3F7A5E" stroke-width="1.5"/>
+<rect x="600.00" y="500.00" width="460.00" height="46.00" fill="#EDF3F0" stroke="#3F7A5E" stroke-width="1.5"/>
+<text x="830.00" y="523.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#1E4A2E" text-anchor="middle" dominant-baseline="central" font-weight="bold">文档块表 document_blocks</text>
+<text x="610.00" y="560.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  id : INTEGER  主键</text>
+<line x1="608.00" y1="573.00" x2="1052.00" y2="573.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="585.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  document_id : INTEGER  教材</text>
+<line x1="608.00" y1="598.00" x2="1052.00" y2="598.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="610.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">block_order : INTEGER  原文顺序</text>
+<line x1="608.00" y1="623.00" x2="1052.00" y2="623.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="635.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">block_type : TEXT  文字/图片/标题</text>
+<line x1="608.00" y1="648.00" x2="1052.00" y2="648.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="660.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">original_text / simplified_text  原文/简化</text>
+<line x1="608.00" y1="673.00" x2="1052.00" y2="673.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="685.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">image_path : TEXT  图片路径</text>
+<line x1="608.00" y1="698.00" x2="1052.00" y2="698.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="610.00" y="710.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">page_number : INTEGER  页码</text>
+<line x1="608.00" y1="723.00" x2="1052.00" y2="723.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<line x1="600.00" y1="721.00" x2="1060.00" y2="721.00" stroke="#3F7A5E" stroke-width="0.8" stroke-linecap="round"/>
+<text x="610.00" y="733.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#7F8C8D" text-anchor="start" dominant-baseline="central">FK(document_id) ON DELETE CASCADE</text>
+<rect x="80.00" y="400.00" width="360.00" height="195.00" fill="white" stroke="#2E5E8C" stroke-width="1.5"/>
+<rect x="80.00" y="400.00" width="360.00" height="46.00" fill="#E8F1FB" stroke="#2E5E8C" stroke-width="1.5"/>
+<text x="260.00" y="423.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#123B5E" text-anchor="middle" dominant-baseline="central" font-weight="bold">导师对话表 chat_history</text>
+<text x="90.00" y="460.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  id : INTEGER  主键</text>
+<line x1="88.00" y1="473.00" x2="432.00" y2="473.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="485.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  user_id : INTEGER  所属用户</text>
+<line x1="88.00" y1="498.00" x2="432.00" y2="498.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="510.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">role : TEXT  user/assistant</text>
+<line x1="88.00" y1="523.00" x2="432.00" y2="523.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="535.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">content : TEXT  对话内容</text>
+<line x1="88.00" y1="548.00" x2="432.00" y2="548.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="560.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">created_at : TIMESTAMP  时间</text>
+<line x1="88.00" y1="573.00" x2="432.00" y2="573.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<line x1="80.00" y1="571.00" x2="440.00" y2="571.00" stroke="#2E5E8C" stroke-width="0.8" stroke-linecap="round"/>
+<text x="90.00" y="583.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#7F8C8D" text-anchor="start" dominant-baseline="central">FK(user_id)</text>
+<rect x="1250.00" y="80.00" width="380.00" height="120.00" fill="white" stroke="#8796A8" stroke-width="1.5"/>
+<rect x="1250.00" y="80.00" width="380.00" height="46.00" fill="#F5F7FA" stroke="#8796A8" stroke-width="1.5"/>
+<text x="1440.00" y="103.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#34495E" text-anchor="middle" dominant-baseline="central" font-weight="bold">应用设置表 app_settings</text>
+<text x="1260.00" y="140.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  key : TEXT  设置键</text>
+<line x1="1258.00" y1="153.00" x2="1622.00" y2="153.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="1260.00" y="165.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">value : TEXT  设置值</text>
+<line x1="1258.00" y1="178.00" x2="1622.00" y2="178.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<line x1="1250.00" y1="176.00" x2="1630.00" y2="176.00" stroke="#8796A8" stroke-width="0.8" stroke-linecap="round"/>
+<text x="1260.00" y="188.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#7F8C8D" text-anchor="start" dominant-baseline="central">键值：API Key / Base URL / Model</text>
+<polyline points="440.00,160.00 600.00,160.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="600.00,160.00 592.00,164.00 592.00,156.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="503.91" y="135.57" width="32.18" height="18.85" fill="white"/>
+<text x="520.00" y="145.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="260.00,230.00 260.00,400.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="260.00,400.00 256.00,392.00 264.00,392.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="261.91" y="305.57" width="32.18" height="18.85" fill="white"/>
+<text x="278.00" y="315.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="830.00,360.00 830.00,500.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="830.00,500.00 826.00,492.00 834.00,492.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="831.91" y="420.57" width="32.18" height="18.85" fill="white"/>
+<text x="848.00" y="430.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<text x="975.00" y="920.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">PK 主键    FK 外键    UK 唯一键    IDX 普通索引    1:n 一对多    n:m 多对多</text>
+</svg>

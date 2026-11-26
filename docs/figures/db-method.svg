@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1650" height="1020" viewBox="0 0 1650 1020">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="80.00" y="70.00" width="620.00" height="220.00" fill="white" stroke="#3F7A5E" stroke-width="1.5"/>
+<rect x="80.00" y="70.00" width="620.00" height="46.00" fill="#EDF3F0" stroke="#3F7A5E" stroke-width="1.5"/>
+<text x="390.00" y="93.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#1E4A2E" text-anchor="middle" dominant-baseline="central" font-weight="bold">学习方法表 learning_method</text>
+<text x="90.00" y="130.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  id : BIGINT  主键</text>
+<line x1="88.00" y1="143.00" x2="692.00" y2="143.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="155.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  user_id : BIGINT  所属用户</text>
+<line x1="88.00" y1="168.00" x2="692.00" y2="168.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="180.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">name / category  名称/分类</text>
+<line x1="88.00" y1="193.00" x2="692.00" y2="193.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="205.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">description : VARCHAR(500)  描述</text>
+<line x1="88.00" y1="218.00" x2="692.00" y2="218.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="230.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">evidence_level : VARCHAR(16)  证据等级</text>
+<line x1="88.00" y1="243.00" x2="692.00" y2="243.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="255.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">builtin / active  内置/启用</text>
+<line x1="88.00" y1="268.00" x2="692.00" y2="268.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<line x1="80.00" y1="266.00" x2="700.00" y2="266.00" stroke="#3F7A5E" stroke-width="0.8" stroke-linecap="round"/>
+<text x="90.00" y="278.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#7F8C8D" text-anchor="start" dominant-baseline="central">UK(user_id,name)</text>
+<rect x="860.00" y="70.00" width="620.00" height="195.00" fill="white" stroke="#2E5E8C" stroke-width="1.5"/>
+<rect x="860.00" y="70.00" width="620.00" height="46.00" fill="#E8F1FB" stroke="#2E5E8C" stroke-width="1.5"/>
+<text x="1170.00" y="93.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#123B5E" text-anchor="middle" dominant-baseline="central" font-weight="bold">周计划表 weekly_plan</text>
+<text x="870.00" y="130.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  id : BIGINT  主键</text>
+<line x1="868.00" y1="143.00" x2="1472.00" y2="143.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="155.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  user_id : BIGINT  所属用户</text>
+<line x1="868.00" y1="168.00" x2="1472.00" y2="168.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="180.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">week_start / week_end  周一/周日</text>
+<line x1="868.00" y1="193.00" x2="1472.00" y2="193.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="205.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">status : VARCHAR(16)  状态</text>
+<line x1="868.00" y1="218.00" x2="1472.00" y2="218.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="230.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">note : VARCHAR(500)  备注</text>
+<line x1="868.00" y1="243.00" x2="1472.00" y2="243.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<line x1="860.00" y1="241.00" x2="1480.00" y2="241.00" stroke="#2E5E8C" stroke-width="0.8" stroke-linecap="round"/>
+<text x="870.00" y="253.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#7F8C8D" text-anchor="start" dominant-baseline="central">UK(user_id,week_start)</text>
+<rect x="860.00" y="500.00" width="620.00" height="245.00" fill="white" stroke="#6A5691" stroke-width="1.5"/>
+<rect x="860.00" y="500.00" width="620.00" height="46.00" fill="#F3EEF9" stroke="#6A5691" stroke-width="1.5"/>
+<text x="1170.00" y="523.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#392A57" text-anchor="middle" dominant-baseline="central" font-weight="bold">计划条目表 weekly_plan_item</text>
+<text x="870.00" y="560.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  id : BIGINT  主键</text>
+<line x1="868.00" y1="573.00" x2="1472.00" y2="573.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="585.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  plan_id : BIGINT  周计划</text>
+<line x1="868.00" y1="598.00" x2="1472.00" y2="598.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="610.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  method_id : BIGINT  学习方法</text>
+<line x1="868.00" y1="623.00" x2="1472.00" y2="623.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="635.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">custom_name : VARCHAR(100)  自定义名</text>
+<line x1="868.00" y1="648.00" x2="1472.00" y2="648.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="660.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">target_days : INT  目标天数</text>
+<line x1="868.00" y1="673.00" x2="1472.00" y2="673.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="685.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">avg_score : DECIMAL(4,2)  周均分</text>
+<line x1="868.00" y1="698.00" x2="1472.00" y2="698.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="870.00" y="710.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">decision : VARCHAR(16)  结论KEEP/DROP/TRIAL</text>
+<line x1="868.00" y1="723.00" x2="1472.00" y2="723.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<line x1="860.00" y1="721.00" x2="1480.00" y2="721.00" stroke="#6A5691" stroke-width="0.8" stroke-linecap="round"/>
+<text x="870.00" y="733.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#7F8C8D" text-anchor="start" dominant-baseline="central">IDX(plan_id)  IDX(method_id)</text>
+<rect x="80.00" y="500.00" width="620.00" height="245.00" fill="white" stroke="#A9762A" stroke-width="1.5"/>
+<rect x="80.00" y="500.00" width="620.00" height="46.00" fill="#FDF1DC" stroke="#A9762A" stroke-width="1.5"/>
+<text x="390.00" y="523.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#6B4410" text-anchor="middle" dominant-baseline="central" font-weight="bold">方法打分表 method_log</text>
+<text x="90.00" y="560.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">PK  id : BIGINT  主键</text>
+<line x1="88.00" y1="573.00" x2="692.00" y2="573.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="585.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  user_id : BIGINT  所属用户</text>
+<line x1="88.00" y1="598.00" x2="692.00" y2="598.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="610.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">FK  item_id : BIGINT  计划条目</text>
+<line x1="88.00" y1="623.00" x2="692.00" y2="623.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="635.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">log_date : DATE  打分日期</text>
+<line x1="88.00" y1="648.00" x2="692.00" y2="648.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="660.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">score : TINYINT  评分1-5</text>
+<line x1="88.00" y1="673.00" x2="692.00" y2="673.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="685.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">note : VARCHAR(500)  备注</text>
+<line x1="88.00" y1="698.00" x2="692.00" y2="698.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<text x="90.00" y="710.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" fill="#2C3E50" text-anchor="start" dominant-baseline="central">duration_min : INT  时长(分钟)</text>
+<line x1="88.00" y1="723.00" x2="692.00" y2="723.00" stroke="#E3E8EF" stroke-width="0.7" stroke-linecap="round"/>
+<line x1="80.00" y1="721.00" x2="700.00" y2="721.00" stroke="#A9762A" stroke-width="0.8" stroke-linecap="round"/>
+<text x="90.00" y="733.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#7F8C8D" text-anchor="start" dominant-baseline="central">UK(item_id,log_date)  IDX(user_id,log_date)</text>
+<polyline points="700.00,190.00 860.00,190.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="860.00,190.00 852.00,194.00 852.00,186.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="763.91" y="165.57" width="32.18" height="18.85" fill="white"/>
+<text x="780.00" y="175.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="1170.00,340.00 1170.00,500.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="1170.00,500.00 1166.00,492.00 1174.00,492.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="1171.91" y="410.57" width="32.18" height="18.85" fill="white"/>
+<text x="1188.00" y="420.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="860.00,700.00 700.00,700.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="700.00,700.00 708.00,696.00 708.00,704.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="763.91" y="675.58" width="32.18" height="18.85" fill="white"/>
+<text x="780.00" y="685.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<text x="825.00" y="990.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">PK 主键    FK 外键    UK 唯一键    IDX 普通索引    1:n 一对多    n:m 多对多</text>
+</svg>

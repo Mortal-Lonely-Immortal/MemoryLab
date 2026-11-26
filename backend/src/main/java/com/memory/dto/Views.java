@@ -21,7 +21,8 @@ public final class Views {
 
     public record CardView(Long id, Long noteId, Long deckId, String cardType, String front, String back,
                            String extra, Integer state, LocalDateTime dueDate, Double stability,
-                           Double difficulty, Integer reps, Integer lapses, Integer suspended, Integer leech) {
+                           Double difficulty, Integer reps, Integer lapses, Integer suspended, Integer leech,
+                           Integer favorite, Integer wrong, Integer wrongCount, LocalDateTime lastWrongAt) {
     }
 
     public record PreviewView(int rating, int days, String label, LocalDateTime dueDate) {
@@ -32,6 +33,9 @@ public final class Views {
 
     public record ReviewResult(Long cardId, Integer state, LocalDateTime dueDate, Integer scheduledDays,
                                List<PreviewView> previews) {
+    }
+
+    public record CollectionSummary(long favorites, long wrong) {
     }
 
     public record Overview(long todayDue, long todayNew, long todayReviewed, double retention7d,

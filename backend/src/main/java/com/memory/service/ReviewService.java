@@ -163,6 +163,13 @@ public class ReviewService {
         card.setScheduledDays(o.scheduledDays());
         card.setElapsedDays(o.elapsedDays());
         card.setVersion((card.getVersion() == null ? 0 : card.getVersion()) + 1);
+        if (req.rating() <= 2) {
+            card.setWrong(1);
+            card.setWrongCount((card.getWrongCount() == null ? 0 : card.getWrongCount()) + 1);
+            card.setLastWrongAt(now);
+        } else {
+            card.setWrong(0);
+        }
         if (o.lapses() >= 4) {
             card.setLeech(1);
         }

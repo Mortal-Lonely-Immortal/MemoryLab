@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1020" viewBox="0 0 1600 1020">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="80.00" y="450.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="175.00" y="479.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">用户</text>
+<rect x="360.00" y="450.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="455.00" y="479.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">卡组</text>
+<rect x="640.00" y="450.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="735.00" y="479.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">知识点</text>
+<rect x="920.00" y="450.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="1015.00" y="479.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">卡片</text>
+<rect x="1200.00" y="450.00" width="210.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="1305.00" y="479.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">复习记录</text>
+<rect x="920.00" y="650.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="1015.00" y="679.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">标签</text>
+<rect x="80.00" y="270.00" width="210.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="185.00" y="299.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">FSRS 参数</text>
+<rect x="80.00" y="150.00" width="210.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="185.00" y="179.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">每日统计</text>
+<rect x="80.00" y="30.00" width="210.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="185.00" y="59.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">导入任务</text>
+<rect x="80.00" y="740.00" width="210.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="185.00" y="769.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">学习方法</text>
+<rect x="360.00" y="740.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="455.00" y="769.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">周计划</text>
+<rect x="640.00" y="740.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="735.00" y="769.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">计划条目</text>
+<rect x="920.00" y="740.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="1015.00" y="769.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">方法打分</text>
+<rect x="80.00" y="880.00" width="210.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="185.00" y="909.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">学习会话</text>
+<rect x="360.00" y="900.00" width="210.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="465.00" y="929.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">教材文档</text>
+<rect x="640.00" y="900.00" width="190.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="735.00" y="929.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">文档块</text>
+<rect x="920.00" y="900.00" width="210.00" height="58.00" fill="#F3F6FA" stroke="#8796A8" stroke-width="1.3"/>
+<text x="1025.00" y="929.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" fill="#1B2B3A" text-anchor="middle" dominant-baseline="central" font-weight="bold">图文教程</text>
+<line x1="270.00" y1="479.00" x2="360.00" y2="479.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="360.00,479.00 352.00,483.00 352.00,475.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="299.84" y="458.30" width="30.32" height="17.40" fill="white"/>
+<text x="315.00" y="467.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="550.00" y1="479.00" x2="640.00" y2="479.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="640.00,479.00 632.00,483.00 632.00,475.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="579.84" y="458.30" width="30.32" height="17.40" fill="white"/>
+<text x="595.00" y="467.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="830.00" y1="479.00" x2="920.00" y2="479.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="920.00,479.00 912.00,483.00 912.00,475.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="859.84" y="458.30" width="30.32" height="17.40" fill="white"/>
+<text x="875.00" y="467.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="1110.00" y1="479.00" x2="1200.00" y2="479.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="1200.00,479.00 1192.00,483.00 1192.00,475.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="1139.84" y="458.30" width="30.32" height="17.40" fill="white"/>
+<text x="1155.00" y="467.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="1015.00" y1="508.00" x2="1015.00" y2="650.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="1015.00,650.00 1011.00,642.00 1019.00,642.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="1015.84" y="570.30" width="30.32" height="17.40" fill="white"/>
+<text x="1031.00" y="579.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">n:m</text>
+<polyline points="175.00,450.00 175.00,328.00" fill="none" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="175.00,328.00 179.00,336.00 171.00,336.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="176.84" y="381.30" width="30.32" height="17.40" fill="white"/>
+<text x="192.00" y="390.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="175.00,270.00 175.00,208.00" fill="none" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="175.00,208.00 179.00,216.00 171.00,216.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="176.84" y="229.30" width="30.32" height="17.40" fill="white"/>
+<text x="192.00" y="238.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="175.00,150.00 175.00,88.00" fill="none" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="175.00,88.00 179.00,96.00 171.00,96.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="176.84" y="109.30" width="30.32" height="17.40" fill="white"/>
+<text x="192.00" y="118.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="175.00,508.00 175.00,740.00" fill="none" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="175.00,740.00 171.00,732.00 179.00,732.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="176.84" y="611.30" width="30.32" height="17.40" fill="white"/>
+<text x="192.00" y="620.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="175.00,798.00 175.00,880.00" fill="none" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<polygon points="175.00,880.00 171.00,872.00 179.00,872.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="176.84" y="831.30" width="30.32" height="17.40" fill="white"/>
+<text x="192.00" y="840.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="290.00" y1="769.00" x2="360.00" y2="769.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="360.00,769.00 352.00,773.00 352.00,765.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="309.84" y="748.30" width="30.32" height="17.40" fill="white"/>
+<text x="325.00" y="757.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="550.00" y1="769.00" x2="640.00" y2="769.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="640.00,769.00 632.00,773.00 632.00,765.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="579.84" y="748.30" width="30.32" height="17.40" fill="white"/>
+<text x="595.00" y="757.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="830.00" y1="769.00" x2="920.00" y2="769.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="920.00,769.00 912.00,773.00 912.00,765.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="859.84" y="748.30" width="30.32" height="17.40" fill="white"/>
+<text x="875.00" y="757.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="570.00" y1="929.00" x2="640.00" y2="929.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="640.00,929.00 632.00,933.00 632.00,925.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="589.84" y="908.30" width="30.32" height="17.40" fill="white"/>
+<text x="605.00" y="917.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<line x1="830.00" y1="929.00" x2="920.00" y2="929.00" stroke="#33475B" stroke-width="1.2" stroke-linecap="round"/>
+<polygon points="920.00,929.00 912.00,933.00 912.00,925.00" fill="#33475B" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="859.84" y="908.30" width="30.32" height="17.40" fill="white"/>
+<text x="875.00" y="917.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">1:n</text>
+<polyline points="735.00,900.00 860.00,900.00 860.00,479.00 830.00,479.00" fill="none" stroke="#33475B" stroke-width="1.2" stroke-linejoin="round" stroke-dasharray="8 6"/>
+<polygon points="830.00,479.00 838.00,475.00 838.00,483.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="858.56" y="681.30" width="22.88" height="17.40" fill="white"/>
+<text x="870.00" y="690.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">生成</text>
+</svg>

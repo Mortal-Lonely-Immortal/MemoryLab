@@ -1,5 +1,5 @@
 /* ================================================================
-   TEACH 教学 — data input, simplified materials, pomodoro, music.
+   TEACH 教学 — data input, simplified materials, pomodoro.
    Card glass/scan treatment is inspired by RhineLabUI (MIT):
    https://github.com/LBEILC/RhineLabUI
    ================================================================ */
@@ -7,7 +7,6 @@
   'use strict';
 
   var SUPPORTED = ['.pdf', '.docx', '.ppt', '.pptx'];
-  var AUDIO_EXT = ['.mp3', '.m4a', '.aac', '.wav', '.ogg', '.flac', '.opus', '.webm'];
   var TIMER_KEY = 'memoryLabTeachTimer';
 
   var teachState = {
@@ -15,8 +14,7 @@
     busy: false,
     studyDocId: null,
     studyStartedAt: 0,
-    timer: null,
-    music: { tracks: [], index: -1, audio: null, objectUrls: [] }
+    timer: null
   };
 
   function $(id) { return document.getElementById(id); }
@@ -71,7 +69,6 @@
   // ------------------------------------------------------------
   function renderTeach(main) {
     teachStopTimer(false);
-    teachPauseMusic();
     main.innerHTML =
       '<div class="teach-page">' +
         '<div class="teach-hero">' +
@@ -99,36 +96,7 @@
                 '<div class="teach-upload-log" id="teach-upload-log">等待资料...</div>' +
               '</div>' +
             '</section>' +
-            '<section class="p5-card teach-panel">' +
-              '<div class="p5-card-header">04 MUSIC 音乐</div>' +
-              '<div class="teach-music-body">' +
-                '<div class="teach-music-now">' +
-                  '<div class="teach-music-title" id="teach-music-title">NO TRACK 未选择</div>' +
-                  '<div class="teach-music-sub" id="teach-music-sub">本地文件不会上传，只保留在浏览器中</div>' +
-                '</div>' +
-                '<div class="teach-music-controls">' +
-                  '<button class="btn btn-sm btn-primary" onclick="teachMusicPickFiles()">本地文件</button>' +
-                  '<button class="btn btn-sm" onclick="teachMusicPickFolder()">本地文件夹</button>' +
-                  '<button class="btn btn-sm" onclick="teachMusicToggle()">PLAY 播放</button>' +
-                  '<button class="btn btn-sm" onclick="teachMusicPrev()">PREV</button>' +
-                  '<button class="btn btn-sm" onclick="teachMusicNext()">NEXT</button>' +
-                  '<button class="btn btn-sm" onclick="teachMusicClear()">CLEAR</button>' +
-                '</div>' +
-                '<input type="file" id="teach-music-input" accept="audio/*,.mp3,.m4a,.flac,.wav,.ogg,.opus" multiple style="display:none" onchange="teachMusicHandleFiles(this.files)">' +
-                '<input type="file" id="teach-music-folder" webkitdirectory directory multiple style="display:none" onchange="teachMusicHandleFiles(this.files)">' +
-                '<div class="teach-music-list" id="teach-music-list"><div class="teach-empty">尚未导入音乐</div></div>' +
-                '<div class="teach-system-box">' +
-                  '<div class="teach-system-title">SYSTEM MEDIA 系统媒体</div>' +
-                  '<p>浏览器不能直接读取 QQ 音乐 / 网易云 / Spotify 的歌单或歌名；这里发送 Windows 全局媒体键，控制当前系统媒体会话。完整歌单/元数据需要各家官方 API 或 Windows GSMTC 原生桥。</p>' +
-                  '<div class="teach-system-controls">' +
-                    '<button class="btn btn-sm" onclick="teachSystemMedia(\'play_pause\')">PLAY/PAUSE</button>' +
-                    '<button class="btn btn-sm" onclick="teachSystemMedia(\'prev\')">PREV</button>' +
-                    '<button class="btn btn-sm" onclick="teachSystemMedia(\'next\')">NEXT</button>' +
-                  '</div>' +
-                  '<div class="teach-music-sub" id="teach-system-status"></div>' +
-                '</div>' +
-              '</div>' +
-            '</section>' +
+            '' +
           '</div>' +
           '<div class="teach-col">' +
             '<section class="p5-card teach-panel">' +
@@ -179,7 +147,6 @@
 
     bindTeachDrop();
     initTeachTimer();
-    initTeachMusic();
     loadTeachDocs();
   }
 
@@ -605,134 +572,6 @@
   }
 
   // ------------------------------------------------------------
-  // Music
-  // ------------------------------------------------------------
-  function initTeachMusic() {
-    if (!teachState.music.audio) {
-      var audio = new Audio();
-      audio.loop = true;
-      audio.preload = 'metadata';
-      audio.addEventListener('ended', teachMusicNext);
-      audio.addEventListener('play', function () { updateTeachMusicUI(); });
-      audio.addEventListener('pause', function () { updateTeachMusicUI(); });
-      teachState.music.audio = audio;
-    }
-    updateTeachMusicUI();
-    fetch(API + '/music/system', { method: 'GET' }).then(function (r) { return r.json(); }).then(function (d) {
-      var el = $('teach-system-status');
-      if (el) el.textContent = d.available ? '系统媒体可用：Windows 媒体键' : '当前系统不支持系统媒体键';
-    }).catch(function () {
-      var el = $('teach-system-status');
-      if (el) el.textContent = '系统媒体服务不可用';
-    });
-  }
-
-  function teachMusicPickFiles() { var el = $('teach-music-input'); if (el) el.click(); }
-  function teachMusicPickFolder() { var el = $('teach-music-folder'); if (el) el.click(); }
-
-  async function teachMusicHandleFiles(fileList) {
-    var files = Array.prototype.slice.call(fileList || []);
-    if (!files.length) return;
-    var audioFiles = files.filter(function (f) {
-      var e = extOf(f.name);
-      return AUDIO_EXT.indexOf(e) >= 0 || String(f.type || '').indexOf('audio/') === 0;
-    });
-    if (!audioFiles.length) { toast('没有找到音频文件', 'error'); return; }
-    audioFiles.forEach(function (f) {
-      var url = URL.createObjectURL(f);
-      teachState.music.objectUrls.push(url);
-      teachState.music.tracks.push({ name: f.name, url: url });
-    });
-    if (teachState.music.index < 0) {
-      teachState.music.index = 0;
-      teachLoadMusicTrack(true);
-    }
-    updateTeachMusicUI();
-    toast('已导入 ' + audioFiles.length + ' 首音乐', 'success');
-  }
-
-  function teachLoadMusicTrack(autoplay) {
-    var m = teachState.music;
-    var track = m.tracks[m.index];
-    var audio = m.audio;
-    if (!track || !audio) return;
-    audio.src = track.url;
-    audio.load();
-    if (autoplay) audio.play().catch(function () {});
-    updateTeachMusicUI();
-  }
-
-  function teachMusicToggle() {
-    var m = teachState.music;
-    if (!m.tracks.length) { teachMusicPickFiles(); return; }
-    if (!m.audio.src) { teachLoadMusicTrack(true); return; }
-    if (m.audio.paused) m.audio.play().catch(function () {}); else m.audio.pause();
-    updateTeachMusicUI();
-  }
-
-  function teachMusicNext() {
-    var m = teachState.music;
-    if (!m.tracks.length) return;
-    m.index = (m.index + 1) % m.tracks.length;
-    teachLoadMusicTrack(true);
-  }
-
-  function teachMusicPrev() {
-    var m = teachState.music;
-    if (!m.tracks.length) return;
-    m.index = (m.index - 1 + m.tracks.length) % m.tracks.length;
-    teachLoadMusicTrack(true);
-  }
-
-  function teachPauseMusic() {
-    var m = teachState.music;
-    if (m && m.audio && !m.audio.paused) m.audio.pause();
-  }
-
-  function teachMusicClear() {
-    var m = teachState.music;
-    if (m.audio) { m.audio.pause(); m.audio.removeAttribute('src'); m.audio.load(); }
-    m.objectUrls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} });
-    m.tracks = []; m.objectUrls = []; m.index = -1;
-    updateTeachMusicUI();
-  }
-
-  function updateTeachMusicUI() {
-    var m = teachState.music;
-    var title = $('teach-music-title'), sub = $('teach-music-sub'), list = $('teach-music-list');
-    var track = m.tracks[m.index];
-    if (title) title.textContent = track ? track.name : 'NO TRACK 未选择';
-    if (sub) sub.textContent = track ? (m.audio && !m.audio.paused ? 'PLAYING 播放中' : 'PAUSED 已暂停') + ' · ' + m.tracks.length + ' 首 · 本地文件' : '本地文件不会上传，只保留在浏览器中';
-    if (list) {
-      if (!m.tracks.length) list.innerHTML = '<div class="teach-empty">尚未导入音乐</div>';
-      else {
-        list.innerHTML = m.tracks.map(function (t, i) {
-          return '<div class="teach-music-track ' + (i === m.index ? 'active' : '') + '" onclick="teachMusicSelect(' + i + ')"><span>' + esc(t.name) + '</span></div>';
-        }).join('');
-      }
-    }
-  }
-
-  function teachMusicSelect(i) {
-    var m = teachState.music;
-    if (i < 0 || i >= m.tracks.length) return;
-    m.index = i;
-    teachLoadMusicTrack(true);
-  }
-
-  async function teachSystemMedia(action) {
-    var el = $('teach-system-status');
-    try {
-      var r = await api('POST', '/music/system', { action: action });
-      if (r.error) throw new Error(r.error);
-      if (el) el.textContent = '已发送媒体键：' + action;
-    } catch (e) {
-      if (el) el.textContent = '系统媒体不可用：' + e.message;
-      toast('系统媒体不可用：' + e.message, 'error');
-    }
-  }
-
-  // ------------------------------------------------------------
   // RhineLab-inspired memory-card effect
   // ------------------------------------------------------------
   function decryptRhineText(el) {
@@ -802,7 +641,6 @@
   function teachCleanup() {
     teachLogStudyTime();
     teachStopTimer(false);
-    teachPauseMusic();
   }
 
   window.renderTeach = renderTeach;
@@ -821,15 +659,6 @@
   window.teachTimerReset = teachTimerReset;
   window.teachTimerSkip = teachTimerSkip;
   window.teachTimerSettings = teachTimerSettings;
-  window.teachMusicPickFiles = teachMusicPickFiles;
-  window.teachMusicPickFolder = teachMusicPickFolder;
-  window.teachMusicHandleFiles = teachMusicHandleFiles;
-  window.teachMusicToggle = teachMusicToggle;
-  window.teachMusicPrev = teachMusicPrev;
-  window.teachMusicNext = teachMusicNext;
-  window.teachMusicClear = teachMusicClear;
-  window.teachMusicSelect = teachMusicSelect;
-  window.teachSystemMedia = teachSystemMedia;
   window.teachCleanup = teachCleanup;
   window.bindRhineCards = bindRhineCards;
 })();

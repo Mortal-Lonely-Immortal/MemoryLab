@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="960" viewBox="0 0 1800 960">
+<rect width="100%" height="100%" fill="white"/>
+<rect x="180.00" y="35.00" width="1260.00" height="150.00" rx="10" ry="10" fill="#F4F8FD" stroke="#6F9BC3" stroke-width="1.3"/>
+<text x="198.00" y="57.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#6F9BC3" text-anchor="start" dominant-baseline="central" font-weight="bold">客户端  Windows 10 / 11 x64</text>
+<rect x="180.00" y="215.00" width="1260.00" height="345.00" rx="10" ry="10" fill="#F4FAF7" stroke="#5E9A7C" stroke-width="1.3"/>
+<text x="198.00" y="237.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#5E9A7C" text-anchor="start" dominant-baseline="central" font-weight="bold">本地服务  127.0.0.1</text>
+<rect x="180.00" y="590.00" width="1260.00" height="270.00" rx="10" ry="10" fill="#F8F5FC" stroke="#8B78A8" stroke-width="1.3"/>
+<text x="198.00" y="612.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#8B78A8" text-anchor="start" dominant-baseline="central" font-weight="bold">本地数据  data/</text>
+<rect x="20.00" y="35.00" width="140.00" height="150.00" fill="white" stroke="#2E5E8C" stroke-width="1.3"/>
+<text x="90.00" y="110.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="22" fill="#2E5E8C" text-anchor="middle" dominant-baseline="central" font-weight="bold">客户端</text>
+<rect x="20.00" y="215.00" width="140.00" height="345.00" fill="white" stroke="#3F7A5E" stroke-width="1.3"/>
+<text x="90.00" y="387.50" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="22" fill="#3F7A5E" text-anchor="middle" dominant-baseline="central" font-weight="bold">本地服务</text>
+<rect x="20.00" y="590.00" width="140.00" height="270.00" fill="white" stroke="#6A5691" stroke-width="1.3"/>
+<text x="90.00" y="725.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="22" fill="#6A5691" text-anchor="middle" dominant-baseline="central" font-weight="bold">本地数据</text>
+<rect x="230.00" y="85.00" width="380.00" height="70.00" rx="8" ry="8" fill="white" stroke="#2E5E8C" stroke-width="1.5"/>
+<text x="420.00" y="108.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="20" fill="#123B5E" text-anchor="middle" dominant-baseline="central" font-weight="bold">Edge 应用窗口</text>
+<text x="420.00" y="136.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">P5 / P3 单页应用</text>
+<rect x="850.00" y="85.00" width="470.00" height="70.00" rx="8" ry="8" fill="white" stroke="#8796A8" stroke-width="1.5"/>
+<text x="1085.00" y="108.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="20" fill="#34495E" text-anchor="middle" dominant-baseline="central" font-weight="bold">MemoryLab.exe  C# 启动器</text>
+<text x="1085.00" y="136.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">启动 / 停止 / 健康检查</text>
+<rect x="600.00" y="245.00" width="420.00" height="66.00" rx="8" ry="8" fill="white" stroke="#A9762A" stroke-width="1.5"/>
+<text x="810.00" y="266.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="20" fill="#6B4410" text-anchor="middle" dominant-baseline="central" font-weight="bold">Nginx :18080</text>
+<text x="810.00" y="294.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">P5/P3 静态页 + 反向代理</text>
+<rect x="215.00" y="385.00" width="330.00" height="92.00" rx="8" ry="8" fill="white" stroke="#3F7A5E" stroke-width="1.5"/>
+<text x="380.00" y="419.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#1E4A2E" text-anchor="middle" dominant-baseline="central" font-weight="bold">Spring Boot :18081</text>
+<text x="380.00" y="447.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">卡片 / 复习 / 统计 / 方法</text>
+<rect x="590.00" y="385.00" width="330.00" height="92.00" rx="8" ry="8" fill="white" stroke="#A9762A" stroke-width="1.5"/>
+<text x="755.00" y="419.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" fill="#6B4410" text-anchor="middle" dominant-baseline="central" font-weight="bold">Flask :15000</text>
+<text x="755.00" y="447.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">文档 / 导师 / OCR</text>
+<rect x="965.00" y="385.00" width="330.00" height="92.00" rx="8" ry="8" fill="white" stroke="#8796A8" stroke-width="1.5"/>
+<text x="1130.00" y="419.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#34495E" text-anchor="middle" dominant-baseline="central" font-weight="bold">DeepTutor :3782/:8001</text>
+<text x="1130.00" y="447.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">可选全科工作台</text>
+<rect x="1480.00" y="300.00" width="280.00" height="92.00" rx="8" ry="8" fill="#FBEBE8" stroke="#A8564A" stroke-width="1.5"/>
+<text x="1620.00" y="330.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="20" fill="#5E2419" text-anchor="middle" dominant-baseline="central" font-weight="bold">LLM API</text>
+<text x="1620.00" y="360.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#8A5A50" text-anchor="middle" dominant-baseline="central">OpenAI 兼容，可选</text>
+<rect x="220.00" y="665.00" width="280.00" height="86.00" rx="8" ry="8" fill="white" stroke="#6A5691" stroke-width="1.5"/>
+<text x="360.00" y="696.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#392A57" text-anchor="middle" dominant-baseline="central" font-weight="bold">H2 文件库</text>
+<text x="360.00" y="724.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">data/db  memory.mv.db</text>
+<rect x="535.00" y="665.00" width="280.00" height="86.00" rx="8" ry="8" fill="white" stroke="#6A5691" stroke-width="1.5"/>
+<text x="675.00" y="696.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#392A57" text-anchor="middle" dominant-baseline="central" font-weight="bold">SQLite tutor.db</text>
+<text x="675.00" y="724.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">文档块 / 聊天</text>
+<rect x="850.00" y="665.00" width="280.00" height="86.00" rx="8" ry="8" fill="white" stroke="#6A5691" stroke-width="1.5"/>
+<text x="990.00" y="696.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#392A57" text-anchor="middle" dominant-baseline="central" font-weight="bold">uploads / tutorials</text>
+<text x="990.00" y="724.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">教材 / 教程 / 图片</text>
+<rect x="1165.00" y="665.00" width="280.00" height="86.00" rx="8" ry="8" fill="white" stroke="#6A5691" stroke-width="1.5"/>
+<text x="1305.00" y="696.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#392A57" text-anchor="middle" dominant-baseline="central" font-weight="bold">data/deeptutor</text>
+<text x="1305.00" y="724.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">独立工作区</text>
+<polyline points="420.00,120.00 420.00,200.00 810.00,200.00 810.00,245.00" fill="none" stroke="#33475B" stroke-width="1.6" stroke-linejoin="round"/>
+<polygon points="810.00,245.00 805.50,236.00 814.50,236.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="563.26" y="177.85" width="103.48" height="20.30" fill="white"/>
+<text x="615.00" y="188.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">打开页面 / HTTP</text>
+<line x1="1085.00" y1="155.00" x2="1085.00" y2="205.00" stroke="#7F8C8D" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="9 7"/>
+<rect x="1052.79" y="170.57" width="64.42" height="18.85" fill="white"/>
+<text x="1085.00" y="180.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#7F8C8D" text-anchor="middle" dominant-baseline="central">启动 / 停止</text>
+<polyline points="810.00,311.00 810.00,345.00 380.00,345.00 380.00,385.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="380.00,385.00 375.50,376.00 384.50,376.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<polyline points="810.00,311.00 810.00,345.00 755.00,345.00 755.00,385.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="755.00,385.00 750.50,376.00 759.50,376.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<polyline points="810.00,311.00 810.00,345.00 1130.00,345.00 1130.00,385.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="1130.00,385.00 1125.50,376.00 1134.50,376.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="789.88" y="322.57" width="40.24" height="18.85" fill="white"/>
+<text x="810.00" y="332.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="middle" dominant-baseline="central">反向代理</text>
+<polyline points="920.00,440.00 960.00,440.00 960.00,330.00 1480.00,330.00" fill="none" stroke="#A8564A" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<polygon points="1480.00,330.00 1471.00,334.50 1471.00,325.50" fill="#A8564A" stroke="#A8564A" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="1214.30" y="307.85" width="51.40" height="20.30" fill="white"/>
+<text x="1240.00" y="318.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#A8564A" text-anchor="middle" dominant-baseline="central">HTTPS</text>
+<polyline points="380.00,477.00 380.00,610.00 360.00,610.00 360.00,665.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="360.00,665.00 355.50,656.00 364.50,656.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<polyline points="755.00,477.00 755.00,610.00 675.00,610.00 675.00,665.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="675.00,665.00 670.50,656.00 679.50,656.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<polyline points="755.00,477.00 755.00,610.00 990.00,610.00 990.00,665.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="990.00,665.00 985.50,656.00 994.50,656.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<polyline points="1130.00,477.00 1130.00,610.00 1305.00,610.00 1305.00,665.00" fill="none" stroke="#33475B" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="1305.00,665.00 1300.50,656.00 1309.50,656.00" fill="#33475B" stroke="#33475B" stroke-width="1.0" stroke-linejoin="round"/>
+<rect x="1480.00" y="500.00" width="280.00" height="220.00" rx="8" ry="8" fill="#FBFCFF" stroke="#B7C3CF" stroke-width="1.2"/>
+<text x="1498.00" y="524.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" fill="#34495E" text-anchor="start" dominant-baseline="central" font-weight="bold">图例</text>
+<line x1="1498.00" y1="552.00" x2="1558.00" y2="552.00" stroke="#33475B" stroke-width="1.5" stroke-linecap="round"/>
+<text x="1568.00" y="552.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="start" dominant-baseline="central">本地 HTTP / 调用</text>
+<line x1="1498.00" y1="590.00" x2="1558.00" y2="590.00" stroke="#A8564A" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="9 7"/>
+<text x="1568.00" y="590.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="start" dominant-baseline="central">HTTPS / 可选</text>
+<line x1="1498.00" y1="628.00" x2="1558.00" y2="628.00" stroke="#7F8C8D" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="9 7"/>
+<text x="1568.00" y="628.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" fill="#5D6D7E" text-anchor="start" dominant-baseline="central">启动 / 停止</text>
+<text x="1498.00" y="670.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="start" dominant-baseline="central">所有本地服务只监听 127.0.0.1</text>
+<text x="1498.00" y="692.00" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="13" fill="#5D6D7E" text-anchor="start" dominant-baseline="central">大文件不进数据库，只存路径</text>
+</svg>

@@ -82,6 +82,7 @@
     practice: ['PRACTICE', '练习', '题库 · 错题 · 复习'],
     ingest: ['INGEST', '资料导入', '文件夹 · AI 分类 · 知识库 · 笔记'],
     knowledge: ['KNOWLEDGE', '知识库', '上传资料 · RAG · 索引'],
+    collections: ['COLLECTIONS', '收藏与错题', '收藏 · 错题集 · AI 索引'],
     notebook: ['NOTEBOOK', '笔记', '按主题收集 · 复习'],
     memory: ['MEMORY', '记忆', 'L1 事实 · L2 学习状态 · L3 画像'],
     calendar: ['CALENDAR', '日历', '学习计划 · 时间块 · 复习'],
@@ -93,7 +94,7 @@
 
   var GROUPS = {
     study: { title: 'STUDY', cn: '学习', sub: '总览 · 掌握路径 · 书 · 阅读 · 练习', sections: ['overview', 'learning', 'books', 'reading', 'practice'] },
-    library: { title: 'LIBRARY', cn: '资料', sub: '资料导入 · 知识库 · 笔记 · 记忆', sections: ['ingest', 'knowledge', 'notebook', 'memory'] },
+    library: { title: 'LIBRARY', cn: '资料', sub: '资料导入 · 知识库 · 收藏错题 · 笔记 · 记忆', sections: ['ingest', 'knowledge', 'collections', 'notebook', 'memory'] },
     plan: { title: 'PLAN', cn: '计划', sub: '日历 · 任务', sections: ['calendar', 'tasks'] },
     ai: { title: 'AI', cn: '助手', sub: '导师 · 伙伴 · 研究 · 可视化', sections: ['tutor', 'partners', 'research', 'visualize'] }
   };
@@ -156,7 +157,7 @@
     });
     content.innerHTML = '<div class="p5-card"><div class="p5-card-header">LOADING 加载中</div></div>';
     var fn = {
-      overview: overview, tutor: tutor, learning: learning, knowledge: knowledge,
+      overview: overview, tutor: tutor, learning: learning, knowledge: knowledge, collections: collections,
       books: books, reading: reading, practice: practice, ingest: ingest,
       notebook: notebook, memory: memory, calendar: calendar, tasks: tasks,
       partners: partners, research: research, visualize: visualize
@@ -307,6 +308,42 @@
     out += renderChatTextSegment(raw.slice(last));
     return out;
   }
+  function renderAssistantBody(m) {
+    var original = renderAssistantText(m.text);
+    if (!m.rewrite) return original;
+    if (m.rewrite.state === 'loading') {
+      return original + '<div class="dt-rewrite-status">文言文 / 现代白话改写中…</div>';
+    }
+    if (m.rewrite.state === 'error') {
+      return original + '<div class="dt-rewrite-status is-error">改写失败：' + esc(m.rewrite.error || '未知错误') + '</div>';
+    }
+    var classical = m.rewrite.classical || '';
+    var modern = m.rewrite.modern || '';
+    if (!classical || !modern) return original;
+    return '<div class="dt-rewrite">' +
+      '<div class="dt-rewrite-note">先译为文言文，再转现代白话</div>' +
+      '<div class="dt-rewrite-section"><div class="dt-rewrite-label">文言文</div><div class="dt-rewrite-text">' + esc(classical) + '</div></div>' +
+      '<div class="dt-rewrite-section is-modern"><div class="dt-rewrite-label">现代白话</div><div class="dt-rewrite-text">' + esc(modern) + '</div></div>' +
+      '<details class="dt-rewrite-original"><summary>查看原文</summary><div class="dt-rewrite-text">' + original + '</div></details>' +
+      '</div>';
+  }
+
+  function requestTutorRewrite(msg) {
+    if (!msg || msg.role !== 'assistant' || !String(msg.text || '').trim() || msg.rewrite) return;
+    msg.rewrite = { state: 'loading' };
+    paintChat();
+    mlPostJson('/api/tutor/rewrite', { text: msg.text })
+      .then(function (r) {
+        if (!r || !r.classical || !r.modern) throw new Error('改写结果为空');
+        msg.rewrite = { state: 'done', classical: r.classical, modern: r.modern };
+        paintChat();
+      })
+      .catch(function (e) {
+        msg.rewrite = { state: 'error', error: e.message || String(e) };
+        paintChat();
+      });
+  }
+
   function scheduleMermaidRender(root) {
     if (!root) return;
     if (state.chat && state.chat._mermaidTimer) clearTimeout(state.chat._mermaidTimer);
@@ -359,13 +396,16 @@
     }
     log.innerHTML = state.chat.messages.map(function (m, i) {
       var cls = m.role === 'user' ? 'user' : (m.role === 'sys' ? 'sys' : '');
-      var actions = m.role === 'assistant' && m.text ? '<div class="dt-msg-actions"><button class="dt-mini-btn" onclick="DTWorkspace.saveChatToNotebook(' + i + ')">SAVE TO NOTEBOOK 保存</button></div>' : '';
+      var actions = m.role === 'assistant' && m.text
+        ? '<div class="dt-msg-actions"><button class="dt-mini-btn" onclick="DTWorkspace.saveChatToNotebook(' + i + ')">SAVE TO NOTEBOOK 保存</button>' +
+          (m.saved ? '<button class="dt-mini-btn" onclick="DTWorkspace.makeCardsFromMessage(' + i + ')">MAKE CARDS 生成卡片</button>' : '') + '</div>'
+        : '';
       var atts = m.attachments || [];
       var images = m.role === 'assistant' ? atts.filter(function (a) { return a.type === 'image'; }) : [];
       var files = atts.filter(function (a) { return a.type !== 'image'; });
       var figs = images.map(function (a) { return chatImageFigureHtml(attachmentOpenUrl(a), a.filename || a.name || '生成图'); }).join('');
       var chips = files.length ? '<div class="dt-msg-atts">' + files.map(function (a) { return attachmentChipHtml(a, false); }).join('') + '</div>' : '';
-      var body = m.role === 'assistant' ? renderAssistantText(m.text) : esc(m.text);
+      var body = m.role === 'assistant' ? renderAssistantBody(m) : esc(m.text);
       return '<div class="dt-msg ' + cls + '">' + body + figs + chips + actions + '</div>';
     }).join('');
     log.scrollTop = log.scrollHeight;
@@ -469,19 +509,118 @@
       var opts = list.map(function (n) { return '<option value="' + esc(n.id) + '">' + esc(n.name) + '</option>'; }).join('');
       var firstUser = state.chat.messages.filter(function (m) { return m.role === 'user'; }).slice(-1)[0];
       var title = (msg.text || '').replace(/\s+/g, ' ').slice(0, 70);
-      modal('SAVE TO NOTEBOOK 保存到笔记', '把这条回答收进笔记本，之后可导出或作为学习资料。',
-        '<div class="dt-form"><input class="dt-input" id="dt-save-nb-title" value="' + esc(title) + '"><select class="dt-select" id="dt-save-nb-target">' + opts + '</select><textarea class="dt-textarea" id="dt-save-nb-text" rows="6">' + esc(msg.text) + '</textarea><div class="dt-note">来源：Tutor · Chat</div><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.confirmSaveChat(\'' + esc(firstUser ? firstUser.text : '') + '\')">SAVE 保存</button></div></div>');
+      window.__saveChatPayload = { index: index, title: title, text: msg.text || '', userQuery: firstUser ? firstUser.text : '' };
+      modal('SAVE TO NOTEBOOK 保存到笔记', '把这条回答收进笔记本；保存后可继续生成记忆卡。',
+        '<div class="dt-form"><input class="dt-input" id="dt-save-nb-title" value="' + esc(title) + '"><select class="dt-select" id="dt-save-nb-target">' + opts + '</select><textarea class="dt-textarea" id="dt-save-nb-text" rows="6">' + esc(msg.text) + '</textarea><div class="dt-note">来源：Tutor · Chat</div><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button><button class="btn btn-sm" onclick="DTWorkspace.confirmSaveChat()">SAVE 保存</button><button class="btn btn-sm btn-primary" onclick="DTWorkspace.confirmSaveChat(true)">SAVE &amp; MAKE CARDS 保存并生成</button></div></div>');
     } catch (e) { toast('读取笔记本失败：' + e.message, 'error'); }
   }
-  async function confirmSaveChat(userQuery) {
+  async function confirmSaveChat(makeCards) {
+    var p = window.__saveChatPayload || {};
     var id = (document.getElementById('dt-save-nb-target') || {}).value || '';
     var title = (document.getElementById('dt-save-nb-title') || {}).value || '';
     var text = (document.getElementById('dt-save-nb-text') || {}).value || '';
     if (!id || !title.trim() || !text.trim()) { toast('标题和内容不能为空', 'error'); return; }
     try {
-      await dtApi('/api/notebooks/actions/add-record', { method: 'POST', body: JSON.stringify({ notebook_ids: [id], record_type: 'chat', title: title.trim(), summary: text.trim().slice(0, 300), user_query: userQuery, output: text.trim(), metadata: { source: 'memorylab-chat' }, kb_name: null }) });
+      await dtApi('/api/notebooks/actions/add-record', { method: 'POST', body: JSON.stringify({ notebook_ids: [id], record_type: 'chat', title: title.trim(), summary: text.trim().slice(0, 300), user_query: p.userQuery || title.trim(), output: text.trim(), metadata: { source: 'memorylab-chat' }, kb_name: null }) });
+      if (p.index != null && state.chat && state.chat.messages[p.index]) {
+        state.chat.messages[p.index].saved = true;
+        paintChat();
+      }
       closeModal(); toast('已保存到笔记本', 'success');
+      if (makeCards) openTutorCardMaker(title.trim(), text.trim(), p.userQuery || '');
     } catch (e) { toast('保存失败：' + e.message, 'error'); }
+  }
+
+  function makeCardsFromMessage(index) {
+    if (!state.chat || !state.chat.messages[index]) return;
+    var msg = state.chat.messages[index];
+    if (!msg.saved) { saveChatToNotebook(index); return; }
+    var firstUser = state.chat.messages.filter(function (m) { return m.role === 'user'; }).slice(-1)[0];
+    var title = (msg.text || '').replace(/\s+/g, ' ').slice(0, 70);
+    openTutorCardMaker(title, msg.text || '', firstUser ? firstUser.text : '');
+  }
+
+  async function ensureTutorDeck() {
+    var res = await fetch('/api/v1/decks');
+    var data = await res.json();
+    var list = (data && data.data) || [];
+    var found = list.filter(function (d) { return d.name === 'AI 导师' || d.name === '导师生成'; })[0];
+    if (found) return found.id;
+    var created = await fetch('/api/v1/decks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'AI 导师', description: 'Tutor 回答保存后生成的卡片', parentId: 0 })
+    });
+    var cj = await created.json();
+    if (!created.ok || !cj || !cj.data) throw new Error((cj && (cj.message || cj.error)) || '创建卡组失败');
+    return cj.data.id;
+  }
+
+  function renderTutorCardDraft(cards) {
+    window.__tutorCardDraft = cards || [];
+    var html = (cards || []).map(function (c, i) {
+      return '<div class="dt-card-candidate" data-card-index="' + i + '">' +
+        '<div class="dt-card-candidate-head"><b>卡片 ' + (i + 1) + '</b><label><input type="checkbox" class="dt-card-use" checked> 采用</label></div>' +
+        '<input class="dt-input dt-card-front" value="' + esc(c.front || '') + '">' +
+        '<textarea class="dt-textarea dt-card-back" rows="3">' + esc(c.back || '') + '</textarea>' +
+        '</div>';
+    }).join('');
+    return html || '<div class="dt-sel-status">没有生成候选卡片。</div>';
+  }
+
+  async function openTutorCardMaker(title, text, userQuery) {
+    window.__tutorCardTitle = title || '导师回答';
+    modal('MAKE CARDS 生成卡片', '先生成候选卡，确认后会写入“AI 导师”卡组并进入 FSRS 复习队列。',
+      '<div id="dt-card-maker-body"><div class="dt-sel-status">正在把回答拆成问答卡…</div></div>');
+    try {
+      var data = await mlPostJson('/api/tutor/cards', { text: text, title: title });
+      var cards = (data && data.cards) || [];
+      var body = document.getElementById('dt-card-maker-body');
+      if (body) {
+        body.innerHTML = '<div class="dt-form">' + renderTutorCardDraft(cards) +
+          '<div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CANCEL</button>' +
+          '<button class="btn btn-sm btn-primary" onclick="DTWorkspace.confirmTutorCards()">CREATE ' + cards.length + ' CARDS 加入复习</button></div></div>';
+      }
+    } catch (e) {
+      var el = document.getElementById('dt-card-maker-body');
+      if (el) el.innerHTML = '<div class="dt-sel-err">' + esc(e.message || String(e)) + '</div><div class="dt-actions"><button class="btn btn-sm" onclick="DTWorkspace.closeModal()">CLOSE</button></div>';
+    }
+  }
+
+  async function confirmTutorCards() {
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.dt-card-candidate'));
+    var cards = [];
+    rows.forEach(function (row) {
+      var use = row.querySelector('.dt-card-use');
+      if (!use || !use.checked) return;
+      var front = (row.querySelector('.dt-card-front') || {}).value || '';
+      var back = (row.querySelector('.dt-card-back') || {}).value || '';
+      if (front.trim() && back.trim()) cards.push({ front: front.trim(), back: back.trim() });
+    });
+    if (!cards.length) { toast('至少选择一张有效卡片', 'error'); return; }
+    var buttons = document.querySelectorAll('#dt-modal-mask button');
+    Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
+    try {
+      var deckId = await ensureTutorDeck();
+      var made = 0;
+      for (var i = 0; i < cards.length; i++) {
+        var r = await fetch('/api/v1/cards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deckId: deckId, cardType: 'QA', front: cards[i].front, back: cards[i].back, extra: 'Tutor · ' + (window.__tutorCardTitle || '回答') })
+        });
+        if (!r.ok) {
+          var t = await r.text();
+          throw new Error('创建卡片失败：' + (t || ('HTTP ' + r.status)));
+        }
+        made++;
+      }
+      closeModal();
+      toast('已生成 ' + made + ' 张卡，已进入「AI 导师」复习队列', 'success');
+    } catch (e) {
+      toast('生成卡片失败：' + e.message, 'error');
+      Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
+    }
   }
 
   function setChatStatus(text) {
@@ -527,6 +666,8 @@
       }
       if (d.type === 'done' || (d.metadata && d.metadata.turn_terminal)) {
         state.chat.busy = false; setChatStatus('就绪'); paintChat();
+        var doneMsg = state.chat.messages[state.chat.messages.length - 1];
+        if (doneMsg && doneMsg.role === 'assistant') requestTutorRewrite(doneMsg);
       }
     };
   }
@@ -1625,6 +1766,71 @@
     else location.hash = '#dt-ingest';
   };
 
+  async function memGet(path) {
+    var r = await fetch('/api/v1' + path, { headers: { 'Accept': 'application/json' } });
+    var body = await r.json().catch(function () { return { code: r.status, message: '请求失败' }; });
+    if (!r.ok || body.code !== 0) throw new Error(body.message || ('HTTP ' + r.status));
+    return body.data;
+  }
+
+  function collectionRows(items) {
+    if (!items || !items.length) return '<div class="dt-empty">暂无卡片</div>';
+    return '<div class="dt-list">' + items.map(function (c) {
+      return '<div class="dt-row"><div class="dt-row-main"><b>' + esc(c.front) + '</b>' +
+        '<small>' + esc(c.back || '') + '</small></div>' +
+        '<span class="dt-pill">' + (c.wrong ? 'WRONG' : '★') + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  async function collections(content) {
+    content.innerHTML = card('COLLECTIONS 收藏与错题',
+      '<div style="padding:14px;"><div class="dt-empty">读取收藏与错题…</div></div>');
+    try {
+      var parts = await Promise.all([
+        memGet('/collections/summary'),
+        memGet('/collections/favorites?page=1&size=100'),
+        memGet('/collections/wrong?page=1&size=100')
+      ]);
+      var summary = parts[0] || {};
+      var fav = (parts[1] && parts[1].records) || [];
+      var wrong = (parts[2] && parts[2].records) || [];
+      content.innerHTML =
+        '<div class="dt-grid-2">' +
+          card('FAVORITES 收藏', '<div class="dt-actions" style="padding:10px 12px 0;"><button class="btn btn-sm btn-primary" onclick="DTWorkspace.syncCollectionsToAi()">SYNC TO AI 索引</button></div>' +
+            '<div class="dt-stat" style="margin:12px;"><b>' + (summary.favorites || 0) + '</b><span>FAVORITE CARDS</span></div>' +
+            collectionRows(fav) + '</div>') +
+          card('WRONG 错题集', '<div class="dt-note" style="padding:12px 12px 0;">做错或评分 1/2 的卡会自动进入这里；答对后自动移出。</div>' +
+            '<div class="dt-stat" style="margin:12px;"><b>' + (summary.wrong || 0) + '</b><span>WRONG CARDS</span></div>' +
+            collectionRows(wrong) + '</div>') +
+        '</div>' +
+        '<div class="dt-note" style="margin-top:10px;">“SYNC TO AI”会把收藏和错题导出为 Markdown，上传到 Knowledge 知识库；配置 Embedding 后重建索引即可被 AI 检索。</div>';
+    } catch (e) {
+      content.innerHTML = card('COLLECTIONS 收藏与错题', '<div class="error-state">' + esc(e.message) + '</div>');
+    }
+  }
+
+  async function syncCollectionsToAi() {
+    try {
+      var text = await memGet('/collections/ai-text');
+      var kbName = 'Memory Lab 收藏与错题';
+      var kbs = await dtApi('/api/knowledge-bases');
+      kbs = Array.isArray(kbs) ? kbs : [];
+      var exists = kbs.some(function (k) { return (k.name || k.kb_name || k.id) === kbName; });
+      if (!exists) {
+        var create = new FormData();
+        create.append('name', kbName);
+        await dtApi('/api/knowledge-bases', { method: 'POST', body: create });
+      }
+      var fd = new FormData();
+      fd.append('files', new File([text], 'memorylab-collections.md', { type: 'text/markdown' }));
+      await dtApi('/api/knowledge-bases/' + encodeURIComponent(kbName) + '/upload', { method: 'POST', body: fd });
+      try { await dtApi('/api/knowledge-bases/' + encodeURIComponent(kbName) + '/reindex', { method: 'POST', body: '{}' }); } catch (e) {}
+      toast('收藏与错题已同步到 AI 知识库', 'success');
+    } catch (e) {
+      toast('同步 AI 索引失败：' + e.message, 'error');
+    }
+  }
+
   async function knowledge(content) {
     var kbs = await dtApi('/api/knowledge-bases');
     kbs = Array.isArray(kbs) ? kbs : [];
@@ -2377,11 +2583,258 @@
     } catch (e) { toast('保存失败：' + e.message, 'error'); }
   }
 
+  // ── 划线提问：选中导师回答中的词/句 → 悬浮窗解释 / 检索知识库 ──
+  var _mlSelectPop = null;
+
+  function mlCloseSelectPop() {
+    if (_mlSelectPop && _mlSelectPop.parentNode) _mlSelectPop.parentNode.removeChild(_mlSelectPop);
+    _mlSelectPop = null;
+  }
+
+  async function mlPostJson(path, payload) {
+    var r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {})
+    });
+    var text = await r.text();
+    var data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+    if (!r.ok) {
+      var msg = data && (data.error || data.message || data.detail) || ('HTTP ' + r.status);
+      throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    }
+    return data;
+  }
+
+  function mlResultItem(title, meta, snippet) {
+    return '<div class="ml-sel-item"><b>' + esc(title) + '</b>' +
+      (meta ? '<small>' + esc(meta) + '</small>' : '') +
+      '<p>' + esc(snippet || '') + '</p></div>';
+  }
+
+  async function mlEnsureDeck(name) {
+    var r = await fetch('/api/v1/decks');
+    var j = await r.json();
+    if (!r.ok || !j || j.code !== 0) throw new Error((j && j.message) || '读取卡组失败');
+    var list = (j.data || []);
+    var found = list.filter(function (d) { return d.name === name; })[0];
+    if (found) return found.id;
+    var c = await fetch('/api/v1/decks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, description: '划线提问保存的概念', parentId: 0 })
+    });
+    var cj = await c.json();
+    if (!c.ok || !cj || cj.code !== 0 || !cj.data) throw new Error((cj && cj.message) || '创建卡组失败');
+    return cj.data.id;
+  }
+
+  async function mlSaveConcept(action, text, answer, btn) {
+    var old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '保存中…';
+    try {
+      if (action === 'card') {
+        var deckId = await mlEnsureDeck('划线提问');
+        var front = text.length <= 60 ? '「' + text + '」是什么？' : '请解释：' + text.slice(0, 80);
+        var r = await fetch('/api/v1/cards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            deckId: deckId,
+            cardType: 'QA',
+            front: front,
+            back: answer,
+            extra: '划线提问 · ' + text.slice(0, 40)
+          })
+        });
+        var j = await r.json();
+        if (!r.ok || !j || j.code !== 0) throw new Error((j && j.message) || '创建卡片失败');
+        btn.textContent = '✓ 已加入卡片';
+        toast('已加入「划线提问」卡组', 'success');
+      } else {
+        var kbName = 'Memory Lab 概念库';
+        var kbs = await dtApi('/api/knowledge-bases');
+        kbs = Array.isArray(kbs) ? kbs : [];
+        var exists = kbs.some(function (k) { return (k.name || k.kb_name || k.id) === kbName; });
+        if (!exists) {
+          var create = new FormData();
+          create.append('name', kbName);
+          await dtApi('/api/knowledge-bases', { method: 'POST', body: create });
+        }
+        var md = '# 划线提问：' + text + '\n\n## 选中内容\n\n' + text + '\n\n## 解释\n\n' + answer + '\n';
+        var fd = new FormData();
+        fd.append('files', new File([md], 'concept-' + Date.now() + '.md', { type: 'text/markdown' }));
+        await dtApi('/api/knowledge-bases/' + encodeURIComponent(kbName) + '/upload', { method: 'POST', body: fd });
+        try { await dtApi('/api/knowledge-bases/' + encodeURIComponent(kbName) + '/reindex', { method: 'POST', body: '{}' }); } catch (e) {}
+        btn.textContent = '✓ 已加入知识库';
+        toast('已加入概念知识库；配置 Embedding 后重建索引即可被 AI 检索', 'success');
+      }
+    } catch (e) {
+      btn.textContent = old;
+      toast('保存失败：' + e.message, 'error');
+    } finally {
+      if (btn.textContent.indexOf('✓') !== 0) btn.disabled = false;
+    }
+  }
+
+  function mlShowSelectPop(text, context, rect) {
+    mlCloseSelectPop();
+    var pop = document.createElement('div');
+    pop.id = 'ml-select-pop';
+    pop.className = 'ml-select-pop';
+    pop.innerHTML =
+      '<div class="ml-sel-head"><b>划线提问</b><button class="ml-sel-close" title="关闭" aria-label="关闭">×</button></div>' +
+      '<div class="ml-sel-quote">“' + esc(text) + '”</div>' +
+      '<div class="ml-sel-actions">' +
+        '<button class="primary" data-ml-act="explain">解释这句话</button>' +
+        '<button data-ml-act="search">查知识库</button>' +
+        '<button data-ml-act="ask">继续问导师</button>' +
+      '</div>' +
+      '<div class="ml-sel-result"><div class="ml-sel-status">选中文字后，可解释，也可查教材/卡片/知识点。</div></div>' +
+      '<div class="ml-sel-save-row" id="ml-sel-save-row">' +
+        '<button type="button" data-ml-save="kb" disabled>＋ 知识库</button>' +
+        '<button type="button" data-ml-save="card" disabled>＋ 卡片</button>' +
+      '</div>';
+    document.body.appendChild(pop);
+    _mlSelectPop = pop;
+
+    var result = pop.querySelector('.ml-sel-result');
+    var buttons = Array.prototype.slice.call(pop.querySelectorAll('[data-ml-act]'));
+    var saveRow = pop.querySelector('#ml-sel-save-row');
+    var saveButtons = Array.prototype.slice.call(pop.querySelectorAll('[data-ml-save]'));
+    var currentAnswer = '';
+
+    function setBusy(on) {
+      buttons.forEach(function (b) { b.disabled = on; });
+    }
+
+    async function run(action) {
+      if (!text) return;
+      setBusy(true);
+      result.innerHTML = '<div class="ml-sel-status">' + (action === 'explain' ? '导师解释中…' : '检索中…') + '</div>';
+      try {
+        if (action === 'explain') {
+          var r = await mlPostJson('/api/tutor/inspect', { text: text, context: context, action: 'explain' });
+          currentAnswer = r.answer || '';
+          result.innerHTML = '<div class="ml-sel-answer">' + esc(currentAnswer || '没有返回内容') + '</div>';
+          if (saveRow) saveRow.classList.add('is-ready');
+          saveButtons.forEach(function (b) { b.disabled = !currentAnswer; });
+        } else if (action === 'search') {
+          var docP = mlPostJson('/api/tutor/inspect', { text: text, context: context, action: 'search' });
+          var cardP = fetch('/api/v1/cards?page=1&size=5&keyword=' + encodeURIComponent(text.slice(0, 40)))
+            .then(function (res) { return res.json(); })
+            .then(function (j) { var d = (j && j.data) || {}; return d.records || d.list || []; })
+            .catch(function () { return []; });
+          var noteP = fetch('/api/v1/notes?keyword=' + encodeURIComponent(text.slice(0, 40)))
+            .then(function (res) { return res.json(); })
+            .then(function (j) { return (j && j.data) || []; })
+            .catch(function () { return []; });
+          var parts = await Promise.allSettled([docP, cardP, noteP]);
+          var docs = parts[0].status === 'fulfilled' ? ((parts[0].value && parts[0].value.results) || []) : [];
+          var cards = parts[1].status === 'fulfilled' ? (parts[1].value || []) : [];
+          var notes = parts[2].status === 'fulfilled' ? (parts[2].value || []) : [];
+          var html = '';
+          if (docs.length) {
+            html += '<div class="ml-sel-group-title">教材 / 文档</div>';
+            docs.forEach(function (d) {
+              if (d.error) { html += '<div class="ml-sel-err">' + esc(d.error) + '</div>'; return; }
+              html += mlResultItem(d.document || '教材', (d.chapter || '') + ' · 命中“' + (d.term || text) + '”', d.snippet);
+            });
+          }
+          if (cards.length) {
+            html += '<div class="ml-sel-group-title">记忆卡</div>';
+            cards.forEach(function (c) {
+              html += mlResultItem(c.front || c.title || '记忆卡', c.deckName || c.deck || '卡片', c.back || c.content || '');
+            });
+          }
+          if (notes.length) {
+            html += '<div class="ml-sel-group-title">知识点 / 笔记</div>';
+            notes.forEach(function (n) {
+              html += mlResultItem(n.title || '知识点', n.deckName || n.source || '', n.contentMd || n.content || '');
+            });
+          }
+          result.innerHTML = html || '<div class="ml-sel-status">没有在教材、卡片或知识点中找到直接匹配。可以点“解释这句话”让导师按通用知识解释。</div>';
+        } else if (action === 'ask') {
+          var input = document.getElementById('dt-chat-text');
+          if (input) {
+            input.value = '请解释这句话：' + text;
+            input.focus();
+            mlCloseSelectPop();
+          }
+        }
+      } catch (e) {
+        result.innerHTML = '<div class="ml-sel-err">' + esc(e.message || String(e)) + '</div>';
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    pop.querySelector('.ml-sel-close').onclick = mlCloseSelectPop;
+    buttons.forEach(function (b) {
+      b.onclick = function () { run(b.getAttribute('data-ml-act')); };
+    });
+    saveButtons.forEach(function (b) {
+      b.onclick = function () {
+        if (!currentAnswer) { toast('先点“解释这句话”，再保存概念。', 'error'); return; }
+        mlSaveConcept(b.getAttribute('data-ml-save'), text, currentAnswer, b);
+      };
+    });
+
+    // 先测宽高，再夹在视口内
+    pop.style.visibility = 'hidden';
+    var pw = pop.offsetWidth || 400;
+    var ph = pop.offsetHeight || 240;
+    var left = Math.max(12, Math.min(rect.left + rect.width / 2 - pw / 2, window.innerWidth - pw - 12));
+    var top = rect.bottom + 10;
+    if (top + ph > window.innerHeight - 12) top = Math.max(12, rect.top - ph - 10);
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+    pop.style.visibility = 'visible';
+  }
+
+  function mlOnSelection() {
+    if (!_mlSelectPop) {
+      var sel = window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      var text = String(sel.toString() || '').trim();
+      if (!text || text.length > 300) return;
+      var node = sel.anchorNode;
+      var el = node && (node.nodeType === 3 ? node.parentElement : node);
+      var msg = el && el.closest ? el.closest('.dt-msg') : null;
+      if (!msg || msg.classList.contains('user')) return;
+      if (!msg.closest('#dt-chat-log')) return;
+      var range;
+      try { range = sel.getRangeAt(0); } catch (e) { return; }
+      if (!msg.contains(range.commonAncestorContainer)) return;
+      var rect = range.getBoundingClientRect();
+      if (!rect || (!rect.width && !rect.height)) return;
+      var context = String(msg.innerText || '').replace(/SAVE TO NOTEBOOK 保存/g, '').trim().slice(0, 800);
+      mlShowSelectPop(text, context, rect);
+    }
+  }
+
+  document.addEventListener('mouseup', function (e) {
+    if (e.target && e.target.closest && e.target.closest('#ml-select-pop')) return;
+    setTimeout(mlOnSelection, 0);
+  });
+  document.addEventListener('mousedown', function (e) {
+    if (_mlSelectPop && !(e.target && e.target.closest && e.target.closest('#ml-select-pop'))) mlCloseSelectPop();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') mlCloseSelectPop();
+  });
+  window.addEventListener('scroll', function (e) {
+    if (_mlSelectPop && e.target && e.target.closest && e.target.closest('#ml-select-pop')) return;
+    mlCloseSelectPop();
+  }, true);
+
   window.DTWorkspace = {
     render: render, renderGroup: renderGroup, renderSection: renderSection, navigate: navigate, go: go, renderTutor: tutor, closeModal: closeModal,
     newKb: newKb, createKb: createKb, uploadKb: uploadKb, deleteKb: deleteKb,
     openSessionHistory: openSessionHistory, openRecycleBin: openRecycleBin, openSession: openSession, renameSession: renameSession, saveSessionTitle: saveSessionTitle, deleteSession: deleteSession, restoreSession: restoreSession,
-    saveChatToNotebook: saveChatToNotebook, confirmSaveChat: confirmSaveChat, saveTextToNotebook: saveTextToNotebook, confirmSaveText: confirmSaveText,
+    saveChatToNotebook: saveChatToNotebook, makeCardsFromMessage: makeCardsFromMessage, confirmSaveChat: confirmSaveChat, confirmTutorCards: confirmTutorCards, saveTextToNotebook: saveTextToNotebook, confirmSaveText: confirmSaveText,
     newNotebook: newNotebook, createNotebook: createNotebook, openNotebook: openNotebook,
     newNotebookRecord: newNotebookRecord, createNotebookRecord: createNotebookRecord, deleteNotebookRecord: deleteNotebookRecord, exportNotebook: exportNotebook,
     sendChat: sendChat, newChat: newChat, setChatMode: setChatMode, openChatMode: openChatMode,
@@ -2395,7 +2848,7 @@
     newPartner: newPartner, createPartner: createPartner, editPartner: editPartner, savePartner: savePartner, deletePartner: deletePartner,
     openPartnerChat: openPartnerChat, sendPartnerChat: sendPartnerChat,
     pickIngestFolder: pickIngestFolder, pickIngestFiles: pickIngestFiles, ingestInputChanged: ingestInputChanged, classifyIngest: classifyIngest, importIngest: importIngest, clearIngest: clearIngest, setIngestCategory: setIngestCategory, openDocsFromIngest: openDocsFromIngest,
-    openKb: openKb, reindexKb: reindexKb, previewKbFile: previewKbFile,
+    openKb: openKb, reindexKb: reindexKb, previewKbFile: previewKbFile, syncCollectionsToAi: syncCollectionsToAi,
     mountEmbeddingConfig: mountEmbeddingConfig, applyEmbeddingPreset: applyEmbeddingPreset, saveEmbeddingConfig: saveEmbeddingConfig, testEmbeddingConnection: testEmbeddingConnection, rebuildAllIndexes: rebuildAllIndexes, embeddingOneClick: embeddingOneClick, openEmbeddingSettings: openEmbeddingSettings,
     mountModelConfig: mountModelConfig, editModel: editModel, saveModel: saveModel
   };

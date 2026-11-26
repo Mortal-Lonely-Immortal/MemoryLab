@@ -938,6 +938,27 @@ tr:hover td { background:rgba(63,157,149,0.03); }
 .review-back.hidden { display:none; }
 .review-actions { display:flex; gap:10px; margin-top:16px; }
 .review-actions .btn { flex:1; height:52px; }
+.review-recall-block { display:grid; gap:8px; margin-top:4px; }
+.review-recall-label { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--text-dim); }
+.review-recall-input { width:100%; min-height:96px; resize:vertical; background:var(--bg); color:var(--text); border:2px solid var(--border); padding:12px; font:inherit; font-size:15px; line-height:1.6; outline:none; }
+.review-recall-input:focus { border-color:var(--accent); }
+.review-recall-input.is-wrong, .review-recall-answer.is-wrong { border:2px solid #d94b4b; background:rgba(217,75,75,.14); color:#ffb4b4; }
+.review-recall-input.is-correct, .review-recall-answer.is-correct { border:2px solid #58b88a; background:rgba(88,184,138,.10); }
+.review-recall-answer { padding:10px 12px; border:2px solid var(--border); background:var(--bg); font-size:14px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.review-recall-feedback { font-family:var(--font-mono); font-size:10px; line-height:1.6; color:var(--text-dim); }
+.review-recall-feedback.is-wrong { color:#ff8b8b; }
+.review-recall-feedback.is-correct { color:#71d3a3; }
+.review-recall-hint { font-family:var(--font-mono); font-size:9px; line-height:1.6; color:var(--text-dim); }
+.review-back-label { display:block; margin-bottom:6px; font-family:var(--font-mono); font-size:9px; letter-spacing:1px; color:var(--accent); }
+html[data-theme="white"] .review-recall-input,
+html[data-theme="white"] .review-recall-answer { background:#fff; color:#0a1230; }
+html[data-theme="white"] .review-recall-input.is-wrong,
+html[data-theme="white"] .review-recall-answer.is-wrong { background:#fff0f0; color:#9b1c1c; }
+html[data-theme="white"] .review-recall-feedback.is-wrong { color:#b42318; }
+html[data-theme="white"] .review-recall-feedback.is-correct { color:#18794e; }
+html[data-theme="black"] .review-recall-input,
+html[data-theme="black"] .review-recall-answer { background:#0c0c0c; color:#f7f4ee; }
+
 .rating-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; }
 .rating-btn { border:0; cursor:pointer; padding:12px 8px; text-align:center; color:#fff; background:#171717; clip-path:polygon(10px 0,100% 0,calc(100% - 8px) 100%,0 100%); transition:transform .08s ease, background .1s ease; }
 .rating-btn:hover { transform:translateY(-2px); background:#242424; }
@@ -947,8 +968,21 @@ tr:hover td { background:rgba(63,157,149,0.03); }
 .rating-btn.r2 { border-bottom:3px solid #c9a35a; }
 .rating-btn.r3 { border-bottom:3px solid #6fa3bf; }
 .rating-btn.r4 { border-bottom:3px solid #6fae8f; }
-.cards-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.cards-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
 .cards-toolbar input, .cards-toolbar select { max-width:240px; }
+.cards-bulkbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 10px; margin-bottom:12px; border:1px solid var(--border); background:var(--panel-deep, #0f1b1c); font-family:var(--font-mono); font-size:9px; color:var(--text-dim); }
+.cards-bulkbar label { display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap; }
+.cards-bulkbar input[type="checkbox"] { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+.cards-bulkbar .bulk-selected { margin-left:auto; color:var(--accent); font-weight:700; }
+.cards-bulkbar .btn { padding:5px 9px; font-size:9px; }
+.card-select { display:flex; align-items:center; justify-content:center; flex:0 0 30px; align-self:stretch; padding-left:4px; }
+.card-select input { width:19px; height:19px; accent-color:var(--accent); cursor:pointer; }
+.card-group-title { margin:14px 0 6px; padding:5px 8px; border-left:4px solid var(--accent); background:var(--panel-soft, #112021); font-family:var(--font-mono); font-size:10px; letter-spacing:.5px; color:var(--accent); }
+.card-class { display:block; margin-top:3px; color:var(--text-dim); font-size:9px; white-space:normal; }
+html[data-theme="white"] .cards-bulkbar { background:#f2f9fd; border-color:#b9d6e7; color:#3d4a66; }
+html[data-theme="white"] .card-group-title { background:#e8f4fb; color:#071a5c; border-left-color:#1b57ff; }
+html[data-theme="black"] .cards-bulkbar { background:#f7f4ee; color:#0c0c0c; border:2px solid #0c0c0c; }
+html[data-theme="black"] .card-group-title { background:#f7f4ee; color:#c00000; border:2px solid #0c0c0c; border-left:7px solid #e60012; }
 .card-row { display:flex; gap:14px; align-items:flex-start; padding:14px; background:var(--panel-deep, #0f1b1c); border-left:3px solid var(--border, #2b4141); margin-bottom:6px; min-width:0; }
 .card-row:hover { border-left-color:var(--accent); }
 .card-row .front { flex:1; min-width:0; font-size:14px; line-height:1.6; overflow-wrap:anywhere; }
@@ -1396,6 +1430,7 @@ html[data-theme="white"] .method-day b { color:#0a3bd6; }
   .card-row .front { flex:1 1 100%; }
   .card-row .meta { flex:1 1 auto; }
   .card-row .card-actions { flex:1 1 100%; justify-content:flex-start; }
+  .card-row .card-select { flex:0 0 100%; justify-content:flex-end; align-self:auto; }
 }
 
 
@@ -2474,8 +2509,213 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
 </style>
 <link rel="stylesheet" href="teach.css">
 <link rel="stylesheet" href="archive3d.css?v=8">
-<link rel="stylesheet" href="deeptutor.css?v=20261123e">
+<link rel="stylesheet" href="deeptutor.css?v=20261125a">
+<link rel="stylesheet" href="deeptutor_selection.css?v=20261125b">
 <link rel="modulepreload" href="./archive3d.bundle.js?v=24">
+<style id="review-layout-override">
+/* REVIEW：题卡是视觉中心，操作退到边缘 */
+.review-wrap {
+  max-width: 1180px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 112px minmax(230px, .52fr) !important;
+  grid-template-rows: auto minmax(500px, auto) auto !important;
+  column-gap: 16px !important;
+  row-gap: 12px !important;
+  align-items: start !important;
+}
+.review-wrap .review-meta {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  margin-bottom: 0 !important;
+  font-size: 9px !important;
+  opacity: .55 !important;
+}
+.review-wrap .review-card {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  min-height: 500px !important;
+  padding: 46px 38px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+.review-wrap .review-front {
+  width: 100% !important;
+  max-width: 860px !important;
+  margin: 0 auto !important;
+  font-size: clamp(26px, 3.2vw, 42px) !important;
+  line-height: 1.45 !important;
+  font-weight: 800 !important;
+  letter-spacing: .2px !important;
+  text-align: center !important;
+}
+.review-wrap .review-recall-block,
+.review-wrap .review-back {
+  width: 100% !important;
+  text-align: left !important;
+}
+.review-wrap .review-actions {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  align-self: end !important;
+  justify-self: stretch !important;
+  margin: 0 0 18px 0 !important;
+  width: 100% !important;
+}
+.review-wrap .review-actions .btn {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  height: 38px !important;
+  padding: 5px 7px !important;
+  background: transparent !important;
+  color: #6b6b6b !important;
+  border: 1px solid #c9c9c9 !important;
+  font-size: 9px !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
+  opacity: .72 !important;
+}
+.review-wrap .review-actions .btn:hover {
+  color: #0a1230 !important;
+  border-color: #1b57ff !important;
+  opacity: 1 !important;
+}
+.review-wrap .rating-row {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  width: 100% !important;
+  max-width: 760px !important;
+  justify-self: center !important;
+  margin-top: 0 !important;
+}
+.review-wrap .review-rail {
+  grid-column: 3 !important;
+  grid-row: 1 / span 3 !important;
+  margin-top: 0 !important;
+  opacity: .82 !important;
+}
+@media (max-width: 1100px) {
+  .review-wrap { grid-template-columns: minmax(0, 1fr) 108px !important; }
+  .review-wrap .review-meta { grid-column: 1 / -1 !important; }
+  .review-wrap .review-rail { grid-column: 1 / -1 !important; grid-row: 4 !important; }
+}
+@media (max-width: 620px) {
+  .review-wrap { grid-template-columns: minmax(0, 1fr) 92px !important; column-gap: 10px !important; }
+  .review-wrap .review-card { min-height: 420px !important; padding: 34px 22px !important; }
+  .review-wrap .review-front { font-size: clamp(22px, 5.4vw, 30px) !important; }
+  .review-wrap .review-actions .btn { height: 42px !important; font-size: 8px !important; }
+}
+</style>
+<style id="focus-paper-style">
+/* 专注模式：淡黄纸色从按钮铺开，压低饱和度 */
+.focus-paper-toggle {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #d8c8a6;
+  background: rgba(247,240,222,.94);
+  color: #6b5b3e;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  letter-spacing: .8px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(120,95,50,.12);
+  transition: background .25s, color .25s, border-color .25s;
+}
+.focus-paper-toggle:hover { background: #fff9e8; border-color: #b9a578; color: #4f3f23; }
+.focus-paper-toggle .focus-paper-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #c9a96a; box-shadow: 0 0 0 2px rgba(201,169,106,.18);
+}
+body.focus-paper-mode .focus-paper-toggle {
+  background: #f1e5c8;
+  border-color: #b9a578;
+  color: #4f3f23;
+}
+body.focus-paper-mode {
+  background: #f1e7cf !important;
+}
+body.focus-paper-mode .bg-pattern,
+body.focus-paper-mode .p3-waterline,
+body.focus-paper-mode .p3-ghost {
+  opacity: 0 !important;
+}
+#main-content,
+.p5-nav {
+  transition: filter .65s ease;
+}
+html[data-theme="black"] body.focus-paper-mode #main-content,
+html[data-theme="black"] body.focus-paper-mode .p5-nav {
+  filter: invert(1) grayscale(1) sepia(.12) contrast(1.22) brightness(.94);
+}
+body.focus-paper-mode img {
+  filter: invert(1);
+}
+.focus-paper-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+  opacity: 0;
+  clip-path: circle(0px at var(--focus-x, 50%) var(--focus-y, 100%));
+  background:
+    radial-gradient(ellipse at var(--focus-x, 50%) var(--focus-y, 100%), rgba(255,252,241,.20), transparent 58%),
+    repeating-linear-gradient(0deg, rgba(112,85,45,.018) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, rgba(112,85,45,.012) 0 1px, transparent 1px 8px),
+    linear-gradient(135deg, rgba(248,240,219,.16), rgba(241,229,201,.20));
+  box-shadow: inset 0 0 80px rgba(100,75,40,.06);
+  -webkit-backdrop-filter: grayscale(1) sepia(.10) contrast(1.02);
+  backdrop-filter: grayscale(1) sepia(.10) contrast(1.02);
+  transition: clip-path 1.15s cubic-bezier(.22,.8,.28,1), opacity .45s ease;
+}
+.focus-paper-overlay.is-on {
+  opacity: 1;
+  clip-path: circle(150vmax at var(--focus-x, 50%) var(--focus-y, 100%));
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-paper-overlay { transition: none; }
+}
+@media (max-width: 620px) {
+  .focus-paper-toggle { left: 10px; bottom: 10px; height: 28px; padding: 0 8px; font-size: 8px; }
+}
+</style>
+<style id="collection-style">
+.card-fav { min-width: 26px; color: #8a9aac; }
+.card-fav.is-on { color: #c9a227; border-color: #c9a227; }
+.wrong-badge { display:inline-block; padding:1px 5px; background:#d94b4b; color:#fff; font-size:8px; letter-spacing:.5px; }
+.review-fav-btn { width:100%; margin:8px 0 0; padding:7px; border:1px solid var(--border); background:transparent; color:var(--text-dim); font-family:var(--font-mono); font-size:9px; cursor:pointer; }
+.review-fav-btn.is-on { color:#c9a227; border-color:#c9a227; }
+</style>
+<style id="recall-review-style">
+.review-recall-block { display:grid; gap:8px; margin-top:4px; }
+.review-recall-label { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--text-dim); }
+.review-recall-input { width:100%; min-height:96px; resize:vertical; background:var(--bg); color:var(--text); border:2px solid var(--border); padding:12px; font:inherit; font-size:15px; line-height:1.6; outline:none; }
+.review-recall-input:focus { border-color:var(--accent); }
+.review-recall-input.is-wrong, .review-recall-answer.is-wrong { border:2px solid #d94b4b; background:rgba(217,75,75,.14); color:#ffb4b4; }
+.review-recall-input.is-correct, .review-recall-answer.is-correct { border:2px solid #58b88a; background:rgba(88,184,138,.10); }
+.review-recall-answer { padding:10px 12px; border:2px solid var(--border); background:var(--bg); font-size:14px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.review-recall-feedback { font-family:var(--font-mono); font-size:10px; line-height:1.6; color:var(--text-dim); }
+.review-recall-feedback.is-wrong { color:#ff8b8b; }
+.review-recall-feedback.is-correct { color:#71d3a3; }
+.review-recall-hint { font-family:var(--font-mono); font-size:9px; line-height:1.6; color:var(--text-dim); }
+.review-back-label { display:block; margin-bottom:6px; font-family:var(--font-mono); font-size:9px; letter-spacing:1px; color:var(--accent); }
+html[data-theme="white"] .review-recall-input,
+html[data-theme="white"] .review-recall-answer { background:#fff; color:#0a1230; }
+html[data-theme="white"] .review-recall-input.is-wrong,
+html[data-theme="white"] .review-recall-answer.is-wrong { background:#fff0f0; color:#9b1c1c; }
+html[data-theme="white"] .review-recall-feedback.is-wrong { color:#b42318; }
+html[data-theme="white"] .review-recall-feedback.is-correct { color:#18794e; }
+html[data-theme="black"] .review-recall-input,
+html[data-theme="black"] .review-recall-answer { background:#0c0c0c; color:#f7f4ee; }
+
+
+</style>
 </head>
 <body>
 
@@ -2540,6 +2780,11 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
   <div class="nav-tab" data-page="dt-group-ai"><span>AI 助手</span></div>
   <div class="nav-ver">P5<b>·</b>V1.0.14</div>
 </nav>
+<button class="focus-paper-toggle" id="focus-paper-toggle" type="button" onclick="toggleFocusMode()" aria-pressed="false" title="专注模式：淡黄纸色覆盖">
+  <span class="focus-paper-dot" aria-hidden="true"></span>
+  <span class="focus-paper-label">FOCUS 专注</span>
+</button>
+
 
 <main class="main" id="main-content"></main>
 <button class="tutor-bubble" onclick="openTutorWindow()" title="AI 导师浮窗（可置顶）"><b>T</b><span>导师</span></button>
@@ -2547,7 +2792,7 @@ html[data-theme="white"] .logo-flip:hover .logo-flip-inner { transform: rotateY(
 <script src="/vendor/echarts.min.js"></script>
 <script src="teach.js"></script>
 <script src="mermaid.min.js?v=10.9.5"></script>
-<script src="deeptutor.js?v=20261123g"></script>
+<script src="deeptutor.js?v=20261125b"></script>
 <script>
 /* ================================================================
  * DeepTutor — P5 Pentagram UI (r/R=0.45饱满比例, 3层结构)
@@ -3410,8 +3655,8 @@ async function saveConfig() {
 // Memory Lab — Review / Cards / Stats
 // ================================================================
 const MEM = '/api/v1';
-let reviewState = { queue: [], idx: 0, revealed: false, startedAt: 0 };
-let cardsState = { page: 1, total: 0, size: 20, q: '', deckId: '', state: '', records: [], decks: [] };
+let reviewState = { queue: [], idx: 0, phase: 'recall', entered: '', result: null, startedAt: 0 };
+let cardsState = { page: 1, total: 0, size: 20, q: '', deckId: '', bookId: '', state: '', collection: '', records: [], decks: [], selected: {} };
 
 function escapeHtml(value) {
   return String(value == null ? '' : value)
@@ -3446,11 +3691,74 @@ async function renderReview(main) {
   main.innerHTML = '<div class="review-wrap"><div class="empty-state"><div class="empty-icon">R</div><h3>LOADING 加载中</h3><p>正在读取今日队列</p></div></div>';
   try {
     var queue = await memApi('GET', '/review/queue?limit=30');
-    reviewState = { queue: queue || [], idx: 0, revealed: false, startedAt: Date.now() };
+    reviewState = { queue: queue || [], idx: 0, phase: 'recall', entered: '', result: null, startedAt: Date.now() };
     drawReviewCard();
   } catch (e) {
     main.innerHTML = '<div class="review-wrap"><div class="error-state">' + escapeHtml(e.message) + '</div></div>';
   }
+}
+
+function normalizeRecall(value) {
+  return String(value == null ? '' : value)
+    .toLowerCase()
+    .replace(/<[^>]*>/g, '')
+    .replace(/[\s\p{P}\p{S}]/gu, '');
+}
+
+function recallBigrams(text) {
+  if (!text) return [];
+  if (text.length < 2) return [text];
+  var out = [];
+  for (var i = 0; i < text.length - 1; i++) out.push(text.slice(i, i + 2));
+  return out;
+}
+
+function recallSimilarity(entered, expected) {
+  var a = normalizeRecall(entered), b = normalizeRecall(expected);
+  if (!a) return { ok: false, score: 0 };
+  if (!b) return { ok: false, score: 0 };
+  if (a === b) return { ok: true, score: 1 };
+  if (b.indexOf(a) >= 0 && a.length >= Math.min(4, Math.max(2, b.length * 0.35))) {
+    return { ok: true, score: Math.max(0.8, a.length / b.length) };
+  }
+  if (a.indexOf(b) >= 0 && b.length >= 2) return { ok: true, score: 1 };
+  var aa = recallBigrams(a), bb = recallBigrams(b);
+  var counts = {};
+  bb.forEach(function (x) { counts[x] = (counts[x] || 0) + 1; });
+  var overlap = 0;
+  aa.forEach(function (x) {
+    if (counts[x]) { overlap++; counts[x]--; }
+  });
+  var score = (2 * overlap) / (aa.length + bb.length || 1);
+  return { ok: score >= 0.62, score: score };
+}
+
+function reviewRecallInput(value) {
+  reviewState.entered = value;
+}
+
+function reviewRecallKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    checkRecall();
+  }
+}
+
+function checkRecall() {
+  var item = reviewState.queue[reviewState.idx];
+  if (!item) return;
+  var input = document.getElementById('review-recall-input');
+  var entered = input ? input.value : (reviewState.entered || '');
+  reviewState.entered = entered;
+  var result = recallSimilarity(entered, item.card.back || '');
+  if (!normalizeRecall(entered)) {
+    result = { ok: false, score: 0, reason: 'empty' };
+  } else if (!result.ok) {
+    result.reason = 'mismatch';
+  }
+  reviewState.result = result;
+  reviewState.phase = 'result';
+  drawReviewCard();
 }
 
 function drawReviewCard() {
@@ -3467,15 +3775,35 @@ function drawReviewCard() {
   }
   var card = item.card;
   var previews = item.previews || [];
+  var result = reviewState.result || {};
   var html = '<div class="review-wrap"><div class="review-meta"><span>RECALL 主动回忆</span><span>' +
     (reviewState.idx + 1) + ' / ' + reviewState.queue.length + ' · ' + stateName(card.state) + '</span></div>' +
     '<div class="p5-card review-card" id="review-card">' +
-      '<div class="review-front">' + escapeHtml(card.front) + '</div>' +
-      '<div class="review-back' + (reviewState.revealed ? '' : ' hidden') + '" id="review-back">' + escapeHtml(card.back) + '</div>' +
-    '</div>';
+      '<div class="review-front">' + escapeHtml(card.front) + '</div>';
 
-  if (!reviewState.revealed) {
-    html += '<div class="review-actions"><button class="btn btn-primary" onclick="revealReview()">SHOW ANSWER 显示答案</button></div>';
+  if (reviewState.phase === 'recall') {
+    html += '<div class="review-recall-block">' +
+      '<label class="review-recall-label" for="review-recall-input">凭记忆输入答案</label>' +
+      '<textarea id="review-recall-input" class="review-recall-input" rows="4" placeholder="先不要看答案，写出你记得的内容…" oninput="reviewRecallInput(this.value)" onkeydown="reviewRecallKey(event)">' + escapeHtml(reviewState.entered || '') + '</textarea>' +
+      '<div class="review-recall-hint">Enter 对比答案，Shift+Enter 换行；也可以点下面的按钮。</div>' +
+      '</div>';
+  } else {
+    var answerText = reviewState.entered || '';
+    var stateClass = result.ok ? 'is-correct' : 'is-wrong';
+    var feedback = result.ok
+      ? '匹配正确' + (result.score < 1 ? '（匹配度 ' + Math.round(result.score * 100) + '%）' : '') + '。'
+      : (result.reason === 'empty' ? '未填写，已标红。' : '与标准答案不一致，已标红。');
+    html += '<div class="review-recall-block">' +
+      '<div class="review-recall-label">你的回忆</div>' +
+      '<div class="review-recall-answer ' + stateClass + '">' + (answerText ? escapeHtml(answerText) : '（未填写）') + '</div>' +
+      '<div class="review-recall-feedback ' + stateClass + '">' + escapeHtml(feedback) + ' 请对照标准答案，再选择遗忘程度。</div>' +
+      '</div>' +
+      '<div class="review-back" id="review-back"><span class="review-back-label">标准答案</span>' + escapeHtml(card.back) + '</div>';
+  }
+  html += '</div>';
+
+  if (reviewState.phase === 'recall') {
+    html += '<div class="review-actions"><button class="btn btn-primary" onclick="checkRecall()">COMPARE ANSWER 对比答案</button></div>';
   } else {
     html += '<div class="rating-row">' +
       '<button class="rating-btn r1" onclick="rateReview(1)"><b>1 忘记</b><span>' + escapeHtml((previews[0] || {}).label || '10 分钟') + '</span></button>' +
@@ -3484,21 +3812,22 @@ function drawReviewCard() {
       '<button class="rating-btn r4" onclick="rateReview(4)"><b>4 轻松</b><span>' + escapeHtml((previews[3] || {}).label || '6 天') + '</span></button>' +
       '</div>';
   }
+
   html += '<div class="review-rail"><div class="review-rail-title">SESSION 本轮</div>' +
     '<div class="rail-stat"><span>PROGRESS 进度</span><b>' + (reviewState.idx + 1) + ' / ' + reviewState.queue.length + '</b></div>' +
     '<div class="rail-stat"><span>STATE 状态</span><b>' + stateName(card.state) + '</b></div>' +
     '<div class="rail-stat"><span>CARD 卡片</span><b>#' + card.id + '</b></div>' +
     '<div class="rail-stat"><span>REPS 复习</span><b>' + (card.reps || 0) + '</b></div>' +
     '<div class="rail-stat"><span>LAPSES 遗忘</span><b>' + (card.lapses || 0) + '</b></div>' +
-    '<div class="rail-note">先在心里回答，再显示答案。评分只影响这张卡的下次到期。</div>' +
+    '<div class="rail-note">先凭记忆输入，再对比答案；标红表示未填或不一致。评分只影响这张卡的下次到期。</div>' +
+    '<button class="review-fav-btn ' + (card.favorite ? 'is-on' : '') + '" onclick="toggleReviewFavorite()">' + (card.favorite ? '★ 已收藏' : '☆ 收藏本卡') + '</button>' +
     '<button class="review-delete-btn" id="review-delete-btn" onclick="deleteReviewCard()">DELETE 删除本卡</button></div>';
   html += '</div>';
   main.innerHTML = html;
-}
-
-function revealReview() {
-  reviewState.revealed = true;
-  drawReviewCard();
+  if (reviewState.phase === 'recall') {
+    var input = document.getElementById('review-recall-input');
+    if (input) input.focus();
+  }
 }
 
 async function rateReview(rating) {
@@ -3522,13 +3851,27 @@ async function rateReview(rating) {
       }
     } catch (e) {}
     reviewState.idx++;
-    reviewState.revealed = false;
+    reviewState.phase = 'recall';
+    reviewState.entered = '';
+    reviewState.result = null;
     reviewState.startedAt = Date.now();
     drawReviewCard();
   } catch (e) {
     showToast(e.message, 'error');
     buttons.forEach(function(b) { b.disabled = false; b.style.opacity = '1'; });
   }
+}
+
+async function toggleReviewFavorite() {
+  var item = reviewState.queue[reviewState.idx];
+  if (!item) return;
+  var next = !item.card.favorite;
+  try {
+    await memApi('POST', '/cards/' + item.card.id + '/favorite?favorite=' + next);
+    item.card.favorite = next ? 1 : 0;
+    showToast(next ? '已收藏' : '已取消收藏', 'success');
+    drawReviewCard();
+  } catch (e) { showToast(e.message, 'error'); }
 }
 
 async function deleteReviewCard() {
@@ -3541,7 +3884,9 @@ async function deleteReviewCard() {
     await memApi('DELETE', '/cards/' + item.card.id);
     cardsState.records = (cardsState.records || []).filter(function(c) { return c.id !== item.card.id; });
     reviewState.queue.splice(reviewState.idx, 1);
-    reviewState.revealed = false;
+    reviewState.phase = 'recall';
+    reviewState.entered = '';
+    reviewState.result = null;
     reviewState.startedAt = Date.now();
     showToast('已删除卡片 #' + item.card.id, 'info');
     drawReviewCard();
@@ -3556,20 +3901,34 @@ async function renderCards(main) {
   try {
     var decks = await memApi('GET', '/decks');
     cardsState.decks = decks || [];
+    cardsState.selected = {};
     if (!window.__archive3dPreload) {
       window.__archive3dPreload = fetch('./assets/archive-cassette.glb', { cache: 'force-cache' }).catch(function() {});
     }
-    var options = '<option value="">ALL DECKS 全部卡组</option>' + (decks || []).map(function(d) {
-      return '<option value="' + d.id + '">' + escapeHtml(d.name) + ' (' + d.cardCount + ')</option>';
+    var tree = buildCardDeckTree(cardsState.decks);
+    var bookOptions = '<option value="">ALL BOOKS 全部书籍</option>' + tree.books.map(function(d) {
+      return '<option value="' + d.id + '"' + (String(cardsState.bookId) === String(d.id) ? ' selected' : '') + '>' + escapeHtml(bookOptionLabel(d)) + ' (' + d.cardCount + ')</option>';
     }).join('');
     main.innerHTML = '<div class="p5-card"><div class="p5-card-header">CARD BROWSER 卡片管理<span style="margin-left:auto;display:flex;gap:5px;"><button class="btn btn-sm" onclick="showCardsList()">LIST 列表</button><button class="btn btn-sm" onclick="openArchive3D()">ARCHIVE 3D</button><button class="btn btn-sm btn-primary" onclick="openCardModal(null)">NEW 新建</button></span></div>' +
       '<div class="cards-toolbar">' +
         '<input id="card-q" placeholder="Search 搜索..." value="' + escapeHtml(cardsState.q) + '" onkeypress="if(event.key===\'Enter\'){cardsState.q=this.value;loadCards(1);}">' +
-        '<select id="card-deck" onchange="cardsState.deckId=this.value;loadCards(1);">' + options + '</select>' +
-        '<select id="card-state" onchange="cardsState.state=this.value;loadCards(1);">' +
+        '<select id="card-book" onchange="cardsState.bookId=this.value;cardsState.deckId=\'\';cardsState.selected={};renderCardChapterOptions();loadCards(1);">' + bookOptions + '</select>' +
+        '<select id="card-deck" onchange="cardsState.deckId=this.value;cardsState.selected={};loadCards(1);">' + cardChapterOptions(cardsState.bookId) + '</select>' +
+        '<select id="card-state" onchange="cardsState.state=this.value;cardsState.selected={};loadCards(1);">' +
           '<option value="">ALL STATES 全部状态</option><option value="0">新卡</option><option value="1">学习中</option><option value="2">复习</option><option value="3">重学</option>' +
         '</select>' +
+        '<select id="card-collection" onchange="cardsState.collection=this.value;cardsState.selected={};loadCards(1);">' +
+          '<option value="">ALL 全部</option><option value="favorite">★ 收藏</option><option value="wrong">错题集</option>' +
+        '</select>' +
         '<button class="btn btn-primary" onclick="cardsState.q=$(\'#card-q\').value;loadCards(1)">SEARCH 搜索</button>' +
+      '</div>' +
+      '<div class="cards-bulkbar">' +
+        '<label><input id="card-select-all" type="checkbox" onchange="toggleAllCards(this.checked)"> SELECT ALL 全选本页</label>' +
+        '<button class="btn btn-sm" onclick="selectAllFilteredCards()">全选筛选结果</button>' +
+        '<button class="btn btn-sm btn-danger" id="card-delete-selected" onclick="deleteSelectedCards()" disabled>DELETE SELECTED 删除选中</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteCategoryCards()">DELETE CATEGORY 删除当前分类</button>' +
+        '<button class="btn btn-sm" onclick="reclassifyCards()">AUTO CLASSIFY 自动分类</button>' +
+        '<span class="bulk-selected" id="cards-selected-label">0 selected</span>' +
       '</div>' +
       '<div id="cards-list"><p style="color:var(--text-dim);">Loading...</p></div>' +
       '<div class="pager" id="cards-pager"><button class="btn btn-sm" id="cards-prev" onclick="loadCards(cardsState.page-1)">PREV</button>' +
@@ -3583,31 +3942,89 @@ async function renderCards(main) {
   }
 }
 
+function buildCardDeckTree(decks) {
+  var byId = {};
+  (decks || []).forEach(function(d) { byId[d.id] = d; });
+  var books = (decks || []).filter(function(d) { return Number(d.parentId) === 0; });
+  return { byId: byId, books: books };
+}
+
+function bookOptionLabel(d) {
+  return (Number(d.id) === 1 ? '未分类 / ' : '') + d.name;
+}
+
+function cardChapterOptions(bookId) {
+  var decks = cardsState.decks || [];
+  var byId = {};
+  decks.forEach(function(d) { byId[d.id] = d; });
+  var list = decks.filter(function(d) { return Number(d.parentId) !== 0; });
+  if (bookId) list = list.filter(function(d) { return Number(d.parentId) === Number(bookId); });
+  var options = '<option value="">ALL CHAPTERS 全部章节</option>';
+  list.forEach(function(d) {
+    var parent = byId[d.parentId];
+    var label = (parent ? parent.name + ' / ' : '') + d.name;
+    options += '<option value="' + d.id + '"' + (String(cardsState.deckId) === String(d.id) ? ' selected' : '') + '>' + escapeHtml(label) + ' (' + d.cardCount + ')</option>';
+  });
+  return options;
+}
+
+function renderCardChapterOptions() {
+  var sel = $('#card-deck');
+  if (sel) sel.innerHTML = cardChapterOptions(cardsState.bookId);
+}
+
+function cardDeckLabel(deckId) {
+  var d = (cardsState.decks || []).filter(function(x) { return Number(x.id) === Number(deckId); })[0];
+  if (!d) return '未分类';
+  var parent = (cardsState.decks || []).filter(function(x) { return Number(x.id) === Number(d.parentId); })[0];
+  if (parent && Number(parent.parentId) === 0) return parent.name + ' / ' + d.name;
+  return d.name;
+}
+
+function cardFilterParams(includePaging, page, size) {
+  var params = '';
+  if (includePaging) params += '?page=' + (page || 1) + '&size=' + (size || cardsState.size);
+  else params += '?';
+  if (cardsState.q) params += '&keyword=' + encodeURIComponent(cardsState.q);
+  if (cardsState.bookId) params += '&bookId=' + encodeURIComponent(cardsState.bookId);
+  if (cardsState.deckId) params += '&deckId=' + encodeURIComponent(cardsState.deckId);
+  if (cardsState.state !== '') params += '&state=' + encodeURIComponent(cardsState.state);
+  if (cardsState.collection === 'favorite') params += '&favorite=true';
+  if (cardsState.collection === 'wrong') params += '&wrong=true';
+  return params;
+}
+
+function cardFilterPayload() {
+  return {
+    bookId: cardsState.bookId ? Number(cardsState.bookId) : null,
+    deckId: cardsState.deckId ? Number(cardsState.deckId) : null,
+    keyword: cardsState.q || null,
+    state: cardsState.state !== '' ? Number(cardsState.state) : null,
+    favorite: cardsState.collection === 'favorite' ? true : null,
+    wrong: cardsState.collection === 'wrong' ? true : null
+  };
+}
+
 async function loadCards(page) {
   if (page < 1) page = 1;
   cardsState.page = page;
-  var params = '?page=' + page + '&size=' + cardsState.size;
-  if (cardsState.q) params += '&keyword=' + encodeURIComponent(cardsState.q);
-  if (cardsState.deckId) params += '&deckId=' + encodeURIComponent(cardsState.deckId);
-  if (cardsState.state !== '') params += '&state=' + encodeURIComponent(cardsState.state);
-  var data = await memApi('GET', '/cards' + params);
+  var data = await memApi('GET', '/cards' + cardFilterParams(true, page, cardsState.size));
   cardsState.total = data.total || 0;
   cardsState.records = data.records || [];
   var list = $('#cards-list');
   if (!data.records || data.records.length === 0) {
     list.innerHTML = '<div class="empty-state"><div class="empty-icon">C</div><h3>NO CARDS 没有卡片</h3></div>';
   } else {
-    list.innerHTML = data.records.map(function(c) {
-      return '<div class="card-row rhine-card" data-card-id="' + c.id + '">' +
-        '<div class="front"><span class="rhine-index">X-' + String(c.id).padStart(3, '0') + '</span>' + escapeHtml(c.front) +
-        '<div class="card-back">' + escapeHtml(c.back || '') + '</div>' +
-        '<div class="card-extra">' + escapeHtml(c.extra || '') + '</div>' +
-        '<div class="rhine-hint">CLICK TO REVEAL · 点击翻开</div></div>' +
-        '<div class="meta">' + (c.suspended ? '暂停' : stateName(c.state)) + '<br>#' + c.id +
-        '<div class="card-reps">' + (c.reps || 0) + ' 复习 / ' + (c.lapses || 0) + ' 遗忘</div></div>' +
-        '<div class="card-actions"><button class="btn btn-sm" onclick="openCardModal(' + c.id + ')">EDIT</button>' +
-        '<button class="btn btn-sm" onclick="toggleCardSuspend(' + c.id + ',' + (!!c.suspended) + ')">' + (c.suspended ? '恢复' : '暂停') + '</button>' +
-        '<button class="btn btn-sm btn-danger" onclick="deleteCard(' + c.id + ')">删除</button></div></div>';
+    var groups = {};
+    data.records.forEach(function(c) {
+      var label = cardDeckLabel(c.deckId);
+      if (!groups[label]) groups[label] = [];
+      groups[label].push(c);
+    });
+    var labels = Object.keys(groups).sort();
+    list.innerHTML = labels.map(function(label) {
+      return '<div class="card-group-title">' + escapeHtml(label) + ' <span style="opacity:.6;">' + groups[label].length + '</span></div>' +
+        groups[label].map(renderCardRow).join('');
     }).join('');
     if (typeof bindRhineCards === 'function') bindRhineCards(list);
   }
@@ -3615,6 +4032,115 @@ async function loadCards(page) {
   $('#cards-page-label').textContent = cardsState.page + ' / ' + pages + ' · ' + cardsState.total + ' cards';
   $('#cards-prev').disabled = cardsState.page <= 1;
   $('#cards-next').disabled = cardsState.page >= pages;
+  updateCardSelectionUI();
+}
+
+function renderCardRow(c) {
+  var checked = !!cardsState.selected[c.id];
+  return '<div class="card-row rhine-card" data-card-id="' + c.id + '">' +
+    '<div class="front"><span class="rhine-index">X-' + String(c.id).padStart(3, '0') + '</span>' + escapeHtml(c.front) +
+    '<div class="card-back">' + escapeHtml(c.back || '') + '</div>' +
+    '<div class="card-extra">' + escapeHtml(c.extra || '') + '</div>' +
+    '<div class="rhine-hint">CLICK TO REVEAL · 点击翻开</div></div>' +
+    '<div class="meta">' + (c.wrong ? '<span class="wrong-badge">错题</span><br>' : '') + (c.suspended ? '暂停' : stateName(c.state)) + '<br>#' + c.id +
+    '<div class="card-reps">' + (c.reps || 0) + ' 复习 / ' + (c.lapses || 0) + ' 遗忘</div>' +
+    '<span class="card-class">' + escapeHtml(cardDeckLabel(c.deckId)) + '</span></div>' +
+    '<div class="card-actions"><button class="btn btn-sm card-fav ' + (c.favorite ? 'is-on' : '') + '" onclick="toggleCardFavorite(' + c.id + ',' + (!!c.favorite) + ')" title="收藏">' + (c.favorite ? '★' : '☆') + '</button>' +
+    '<button class="btn btn-sm" onclick="openCardModal(' + c.id + ')">EDIT</button>' +
+    '<button class="btn btn-sm" onclick="toggleCardSuspend(' + c.id + ',' + (!!c.suspended) + ')">' + (c.suspended ? '恢复' : '暂停') + '</button>' +
+    '<button class="btn btn-sm btn-danger" onclick="deleteCard(' + c.id + ')">删除</button></div>' +
+    '<label class="card-select" title="选择这张卡"><input type="checkbox" data-card-select="' + c.id + '"' + (checked ? ' checked' : '') + ' onchange="toggleCardSelect(' + c.id + ',this.checked)"></label></div>';
+}
+
+function toggleCardSelect(id, checked) {
+  if (checked) cardsState.selected[id] = true;
+  else delete cardsState.selected[id];
+  updateCardSelectionUI();
+}
+
+function selectedCardIds() {
+  return Object.keys(cardsState.selected || {}).filter(function(k) { return cardsState.selected[k]; }).map(Number);
+}
+
+function toggleAllCards(checked) {
+  (cardsState.records || []).forEach(function(c) {
+    if (checked) cardsState.selected[c.id] = true;
+    else delete cardsState.selected[c.id];
+  });
+  (cardsState.records || []).forEach(function(c) {
+    var el = document.querySelector('[data-card-select="' + c.id + '"]');
+    if (el) el.checked = checked;
+  });
+  updateCardSelectionUI();
+}
+
+function updateCardSelectionUI() {
+  var ids = selectedCardIds();
+  var btn = $('#card-delete-selected');
+  if (btn) {
+    btn.disabled = ids.length === 0;
+    btn.textContent = 'DELETE SELECTED 删除选中' + (ids.length ? ' (' + ids.length + ')' : '');
+  }
+  var label = $('#cards-selected-label');
+  if (label) label.textContent = ids.length + ' selected';
+  var all = $('#card-select-all');
+  if (all) {
+    var recs = cardsState.records || [];
+    var n = recs.filter(function(c) { return !!cardsState.selected[c.id]; }).length;
+    all.checked = recs.length > 0 && n === recs.length;
+    all.indeterminate = n > 0 && n < recs.length;
+  }
+}
+
+async function selectAllFilteredCards() {
+  try {
+    var data = await memApi('GET', '/cards' + cardFilterParams(true, 1, 2000), null, 30000);
+    (data.records || []).forEach(function(c) { cardsState.selected[c.id] = true; });
+    (cardsState.records || []).forEach(function(c) {
+      var el = document.querySelector('[data-card-select="' + c.id + '"]');
+      if (el) el.checked = true;
+    });
+    updateCardSelectionUI();
+    showToast('已选择 ' + (data.records || []).length + ' 张（单次上限 2000）', 'info');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteSelectedCards() {
+  var ids = selectedCardIds();
+  if (!ids.length) return;
+  if (!confirm('删除选中的 ' + ids.length + ' 张卡片？\n\n删除后不会进入复习队列。')) return;
+  try {
+    var n = await memApi('POST', '/cards/batch-delete', { ids: ids });
+    cardsState.selected = {};
+    showToast('已删除 ' + (n == null ? ids.length : n) + ' 张卡片', 'success');
+    await loadCards(cardsState.page);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteCategoryCards() {
+  if (!cardsState.bookId && !cardsState.deckId && !cardsState.q && cardsState.state === '' && !cardsState.collection) {
+    showToast('请先选择一本书、章节，或设置筛选条件', 'error');
+    return;
+  }
+  var filter = cardFilterPayload();
+  var scope = cardsState.deckId ? cardDeckLabel(cardsState.deckId) : (cardsState.bookId ? (bookOptionLabel((cardsState.decks || []).filter(function(d) { return Number(d.id) === Number(cardsState.bookId); })[0] || {name: '当前分类'})) : '当前筛选结果');
+  if (!confirm('删除「' + scope + '」下的全部卡片？\n\n当前筛选共 ' + cardsState.total + ' 张，删除后不可从复习队列恢复。')) return;
+  try {
+    var n = await memApi('POST', '/cards/batch-delete-filter', filter);
+    cardsState.selected = {};
+    showToast('已删除 ' + (n == null ? cardsState.total : n) + ' 张卡片', 'success');
+    await loadCards(1);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function reclassifyCards() {
+  try {
+    var n = await memApi('POST', '/cards/reclassify');
+    cardsState.bookId = '';
+    cardsState.deckId = '';
+    showToast('已自动分类 ' + (n == null ? 0 : n) + ' 个知识点', 'success');
+    await renderCards($('#main-content'));
+  } catch (e) { showToast(e.message, 'error'); }
 }
 
 function showCardsList() {
@@ -3623,10 +4149,12 @@ function showCardsList() {
   var list = $('#cards-list');
   var pager = $('#cards-pager');
   var toolbar = $('.cards-toolbar');
+  var bulk = $('.cards-bulkbar');
   if (archive) { archive.classList.remove('is-on'); archive.innerHTML = ''; }
   if (list) list.style.display = '';
   if (pager) pager.style.display = '';
   if (toolbar) toolbar.style.display = '';
+  if (bulk) bulk.style.display = '';
 }
 
 function closeCardsArchive() { showCardsList(); }
@@ -3638,6 +4166,7 @@ async function openArchive3D() {
   var list = $('#cards-list');
   var pager = $('#cards-pager');
   var toolbar = $('.cards-toolbar');
+  var bulk = $('.cards-bulkbar');
   if (!archive) return;
   var cards = cardsState.records || [];
   try {
@@ -3648,6 +4177,7 @@ async function openArchive3D() {
   if (list) list.style.display = 'none';
   if (pager) pager.style.display = 'none';
   if (toolbar) toolbar.style.display = 'none';
+  if (bulk) bulk.style.display = 'none';
   archive.classList.add('is-on');
   window.Archive3D.open({
     container: archive,
@@ -3659,6 +4189,7 @@ async function openArchive3D() {
       if (list) list.style.display = '';
       if (pager) pager.style.display = '';
       if (toolbar) toolbar.style.display = '';
+      if (bulk) bulk.style.display = '';
     }
   });
 }
@@ -3672,7 +4203,7 @@ function openCardModal(id) {
   var card = id ? (cardsState.records || []).filter(function(c) { return c.id === id; })[0] : null;
   var decks = cardsState.decks || [];
   var deckOptions = decks.map(function(d) {
-    return '<option value="' + d.id + '"' + (card && card.deckId === d.id ? ' selected' : '') + '>' + escapeHtml(d.name) + '</option>';
+    return '<option value="' + d.id + '"' + (card && card.deckId === d.id ? ' selected' : '') + '>' + escapeHtml(cardDeckLabel(d.id)) + '</option>';
   }).join('');
   var html = '<div class="modal-overlay" id="card-modal-overlay" style="display:block;" onclick="closeCardModal()"></div>' +
     '<div class="p5-modal" id="card-modal" style="display:block;max-width:620px;">' +
@@ -3707,6 +4238,14 @@ async function saveCard(id) {
 async function toggleCardSuspend(id, suspended) {
   try {
     await memApi('POST', '/cards/' + id + '/suspend?suspend=' + (!suspended));
+    await loadCards(cardsState.page);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function toggleCardFavorite(id, favorite) {
+  try {
+    await memApi('POST', '/cards/' + id + '/favorite?favorite=' + (!favorite));
+    showToast(!favorite ? '已收藏' : '已取消收藏', 'success');
     await loadCards(cardsState.page);
   } catch (e) { showToast(e.message, 'error'); }
 }
@@ -4735,5 +5274,38 @@ window.addEventListener('beforeunload', function() {
 });
 </script>
 <script type="module" src="./archive3d.bundle.js?v=24"></script>
+<script>
+/* 专注模式：纸色从按钮位置铺开；再点退出 */
+(function () {
+  function ensureOverlay() {
+    var el = document.getElementById('focus-paper-overlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'focus-paper-overlay';
+      el.className = 'focus-paper-overlay';
+      el.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  window.toggleFocusMode = function () {
+    var btn = document.getElementById('focus-paper-toggle');
+    var overlay = ensureOverlay();
+    var on = !overlay.classList.contains('is-on');
+    if (btn) {
+      var r = btn.getBoundingClientRect();
+      overlay.style.setProperty('--focus-x', (r.left + r.width / 2) + 'px');
+      overlay.style.setProperty('--focus-y', (r.top + r.height / 2) + 'px');
+    }
+    overlay.classList.toggle('is-on', on);
+    document.body.classList.toggle('focus-paper-mode', on);
+    if (btn) {
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      var label = btn.querySelector('.focus-paper-label');
+      if (label) label.textContent = on ? 'EXIT 退出' : 'FOCUS 专注';
+    }
+  };
+})();
+</script>
 </body>
 </html>

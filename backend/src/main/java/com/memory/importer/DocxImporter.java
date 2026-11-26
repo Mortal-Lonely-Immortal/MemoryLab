@@ -34,6 +34,7 @@ public class DocxImporter {
     private static final Pattern CHAPTER = Pattern.compile("^(\\d+)");
     private static final Pattern LAB = Pattern.compile("^实验\\s*(\\d+)");
     private static final Pattern TEXTBOOK = Pattern.compile("^教材\\d+");
+    private static final Pattern CHAPTER_IN_TEXT = Pattern.compile("第\\s*(\\d+)\\s*章");
     private static final Pattern CHAPTER_HEADING = Pattern.compile("^第\\s*(\\d+)\\s*章");
 
     public List<ParsedNote> parse(InputStream in) throws Exception {
@@ -63,6 +64,14 @@ public class DocxImporter {
                         continue;
                     }
                     String fill = fillOf(p);
+                    if (text.startsWith("Q:") || text.startsWith("q:")) {
+                        current.question = text.substring(2).trim();
+                        continue;
+                    }
+                    if (text.startsWith("A:") || text.startsWith("a:")) {
+                        current.answer = text.substring(2).trim();
+                        continue;
+                    }
                     if (FILL_BLUE.equals(fill) && text.startsWith("一句话")) {
                         current.oneLiner = stripPrefix(text, "一句话");
                     } else if (FILL_AMBER.equals(fill) && text.startsWith("易错")) {
@@ -94,7 +103,8 @@ public class DocxImporter {
     private static void addIfUseful(List<ParsedNote> notes, ParsedNote n) {        if (n == null) {
             return;
         }
-        boolean useful = n.oneLiner() != null || !n.bullets().isEmpty() || n.pitfalls() != null
+        boolean useful = n.oneLiner() != null || (n.question() != null && n.answer() != null)
+                || !n.bullets().isEmpty() || n.pitfalls() != null
                 || !n.tables().isEmpty();
         if (useful) {
             notes.add(n);
@@ -195,6 +205,8 @@ public class DocxImporter {
         private final String title;
         private final String chapterHint;
         private String oneLiner;
+        private String question;
+        private String answer;
         private String pitfalls;
         private String corrections;
         private String source;
@@ -219,16 +231,21 @@ public class DocxImporter {
             Matcher m = CHAPTER.matcher(title);
             if (lab.find()) {
                 chapter = "LAB" + Integer.parseInt(lab.group(1));
-            } else if (TEXTBOOK.matcher(title).find()) {
-                chapter = "TEXTBOOK";
-            } else if (m.find()) {
+            } else {
+                Matcher cm = CHAPTER_IN_TEXT.matcher(title);
+                if (cm.find()) {
+                    chapter = cm.group(1);
+                } else if (TEXTBOOK.matcher(title).find()) {
+                    chapter = "TEXTBOOK";
+                } else if (m.find()) {
                 chapter = m.group(1);
-            } else if (title.startsWith("A.")) {
-                chapter = "A";
+                } else if (title.startsWith("A.")) {
+                    chapter = "A";
+                }
             }
             String oneLinerFinal = oneLiner;
             Set<String> dedup = new LinkedHashSet<>(extra);
-            return new ParsedNote(title, chapter, oneLinerFinal, pitfalls, corrections,
+            return new ParsedNote(title, chapter, oneLinerFinal, question, answer, pitfalls, corrections,
                     new ArrayList<>(dedup), tables, source);
         }
 

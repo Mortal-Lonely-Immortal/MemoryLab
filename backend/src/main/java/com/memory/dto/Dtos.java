@@ -21,6 +21,13 @@ public final class Dtos {
                               @NotBlank String front, @NotBlank String back, String extra) {
     }
 
+    public record CardBatchDelete(java.util.List<Long> ids) {
+    }
+
+    public record CardFilter(Long bookId, Long deckId, String keyword, Integer state,
+                             Boolean favorite, Boolean wrong) {
+    }
+
     public record ReviewRequest(@NotNull @Min(1) @Max(4) Integer rating,
                                 Integer durationMs, String clientReqId) {
     }

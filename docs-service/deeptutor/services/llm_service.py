@@ -29,6 +29,20 @@ def _raise_if_llm_error(text):
         raise RuntimeError(stripped)
 
 
+def _clean_api_base(base):
+    """Normalize an OpenAI-compatible base URL.
+
+    The settings UI historically allowed users to paste the full
+    ``/chat/completions`` URL; storing that made the client call
+    ``.../chat/completions/chat/completions``.
+    """
+    value = str(base or '').strip().rstrip('/')
+    suffix = '/chat/completions'
+    if value.endswith(suffix):
+        value = value[:-len(suffix)].rstrip('/')
+    return value
+
+
 class LLMService:
     """
     大模型服务类，封装所有与LLM API的通信。
@@ -44,7 +58,7 @@ class LLMService:
         优先级：传入参数 > 数据库持久化配置 > Config默认值
         """
         self.api_key = api_key or Config.LLM_API_KEY
-        self.api_base = (api_base or Config.LLM_API_BASE).rstrip('/')
+        self.api_base = _clean_api_base(api_base or Config.LLM_API_BASE)
         self.model = model or Config.LLM_MODEL
         # OpenCode Go requires a stable session header on every request.
         # Other OpenAI-compatible providers ignore this header.
@@ -61,7 +75,7 @@ class LLMService:
             if not api_base:
                 db_base = get_setting('llm_api_base')
                 if db_base:
-                    self.api_base = db_base.rstrip('/')
+                    self.api_base = _clean_api_base(db_base)
             if not model:
                 db_model = get_setting('llm_model')
                 if db_model:

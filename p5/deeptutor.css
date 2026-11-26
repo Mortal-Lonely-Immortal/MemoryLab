@@ -219,3 +219,12 @@ html[data-theme="white"] .dt-channel { background: #f4fbff; }
 .dt-mermaid-src { margin:0; font-family:var(--font-mono); font-size:9px; line-height:1.55; color:var(--text-dim); white-space:pre-wrap; overflow-wrap:anywhere; }
 .dt-mermaid-error { margin-bottom:6px; font-size:9px; color:var(--accent); }
 .dt-msg-assistant .dt-mermaid { background:var(--bg); }
+
+/* LIBRARY · collections */
+.dt-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media (max-width:800px){ .dt-grid-2 { grid-template-columns:1fr; } }
+
+/* P5 theme compatibility: DeepTutor components use --bg-card */
+:root { --bg-card: var(--card, #162627); }
+html[data-theme="black"] { --bg-card: #162627; }
+html[data-theme="white"] { --bg-card: #ffffff; }
